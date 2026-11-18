@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const fs = require('fs/promises');
+const path = require('path');
 const cfg = require('../config');
 const db = require('../db');
 const { auth, requireRole } = require('../middleware/auth');
@@ -21,8 +23,9 @@ function generateEmail(name) {
   return email;
 }
 function generateCode() {
-  const r = db.prepare("SELECT MAX(CAST(SUBSTR(employee_code, 4) AS INTEGER)) n FROM employees WHERE employee_code GLOB 'EMP[0-9]*'").get();
-  return `EMP${String((r.n || 0) + 1).padStart(3, '0')}`;
+  const seq = db.prepare("SELECT seq FROM sqlite_sequence WHERE name = 'employees'").get()?.seq || 0;
+  const r = db.prepare("SELECT MAX(CAST(SUBSTR(employee_code, 3) AS INTEGER)) n FROM employees WHERE LOWER(employee_code) GLOB 'ky[0-9]*'").get();
+  return `ky${String(Math.max(seq, r.n || 0) + 1).padStart(2, '0')}`;
 }
 const view = (id) => db.prepare(`SELECT e.id, e.employee_code, e.name, e.status, e.created_at, u.id AS user_id, u.email
                                  FROM employees e LEFT JOIN users u ON u.employee_id = e.id WHERE e.id = ?`).get(id);
@@ -37,7 +40,7 @@ router.get('/', wrap((req, res) => {
   const w = where.length ? 'WHERE ' + where.join(' AND ') : '';
   const total = db.prepare(`SELECT COUNT(*) c FROM employees e LEFT JOIN users u ON u.employee_id = e.id ${w}`).get(...args).c;
   const data = db.prepare(`SELECT e.id, e.employee_code, e.name, e.status, u.email FROM employees e
-      LEFT JOIN users u ON u.employee_id = e.id ${w} ORDER BY e.name LIMIT ? OFFSET ?`).all(...args, limit, (page - 1) * limit);
+      LEFT JOIN users u ON u.employee_id = e.id ${w} ORDER BY e.id LIMIT ? OFFSET ?`).all(...args, limit, (page - 1) * limit);
   res.json({ data, meta: { page, limit, total, total_pages: Math.ceil(total / limit) } });
 }));
 
@@ -95,6 +98,27 @@ router.put('/:id', wrap((req, res) => {
     db.exec('COMMIT');
   } catch (err) { db.exec('ROLLBACK'); throw err; }
   res.json(view(id));
+}));
+
+router.delete('/:id', wrap(async (req, res) => {
+  const e = view(+req.params.id);
+  if (!e) throw new ApiError(404, 'Karyawan tidak ditemukan', 'NOT_FOUND');
+  const photos = db.prepare('SELECT in_photo, out_photo FROM attendances WHERE employee_id = ?')
+    .all(e.id).flatMap((row) => [row.in_photo, row.out_photo]).filter(Boolean);
+  const deleted = db.prepare('DELETE FROM employees WHERE id = ?').run(e.id);
+  if (!deleted.changes) throw new ApiError(404, 'Karyawan tidak ditemukan', 'NOT_FOUND');
+
+  let photoCleanupFailed = false;
+  for (const file of new Set(photos)) {
+    try { await fs.unlink(path.join(cfg.uploadDir, 'attendance', path.basename(file))); }
+    catch (err) {
+      if (err.code !== 'ENOENT') { console.error('Gagal menghapus foto absensi karyawan', err); photoCleanupFailed = true; }
+    }
+  }
+  res.json({
+    ok: true,
+    ...(photoCleanupFailed ? { warning: 'Karyawan sudah dihapus, tetapi sebagian foto absensi gagal dihapus.' } : {}),
+  });
 }));
 
 // POST /api/employees/:id/reset-password  -> password acak baru
