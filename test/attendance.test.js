@@ -47,6 +47,8 @@ let hr, emp1, emp2, e1, e2;
 test.before(async () => {
   server = app.listen(0); base = `http://localhost:${server.address().port}`;
   hr = (await api('POST', '/api/login', { json: { email: 'se@ethes.tech', password: 'Admin123!' } })).body.token;
+  assert.ok(hr);
+  assert.equal((await api('GET', '/api/me', { token: hr })).body.account_code, 'HR01');
 });
 test.after(() => server.close());
 
@@ -67,6 +69,19 @@ test('HR membuat karyawan + akun (email otomatis)', async () => {
   emp1 = (await api('POST', '/api/login', { json: { email: e1.email, password: e1.initial_password } })).body.token;
   emp2 = (await api('POST', '/api/login', { json: { email: e2.email, password: e2.initial_password } })).body.token;
   assert.ok(emp1 && emp2);
+  const admin2 = await api('POST', '/api/admins', { token: hr, json: { name: 'HR Kedua' } });
+  assert.equal(admin2.status, 201); assert.equal(admin2.body.account_code, 'HR02'); assert.equal(admin2.body.role, 'HR');
+  assert.ok(admin2.body.initial_password);
+  const adminLogin = await api('POST', '/api/login', { json: { email: admin2.body.email, password: admin2.body.initial_password } });
+  assert.equal(adminLogin.body.role, 'HR');
+  assert.equal((await api('GET', '/api/me', { token: adminLogin.body.token })).body.account_code, 'HR02');
+  assert.equal((await api('POST', '/api/admins', { token: hr, json: { name: 'Duplikat', email: admin2.body.email } })).status, 409);
+  const admin3 = await api('POST', '/api/admins', { token: hr, json: { name: 'HR Ketiga' } });
+  assert.equal(admin3.status, 201); assert.equal(admin3.body.account_code, 'HR03');
+  const admins = await api('GET', '/api/admins', { token: hr });
+  assert.deepEqual(admins.body.data.map((admin) => admin.account_code), ['HR01', 'HR02', 'HR03']);
+  assert.equal(admins.body.data[1].name, 'HR Kedua');
+  assert.equal(admins.body.data[2].name, 'HR Ketiga');
 });
 
 test('ATT-07 token hilang/tidak valid => 401', async () => {
@@ -100,6 +115,8 @@ test('ATT-04 OUT berhasil; ATT-05 OUT kedua ditolak', async () => {
 });
 
 test('ATT-06 employee tidak boleh lihat data orang lain', async () => {
+  assert.equal((await api('POST', '/api/admins', { token: emp1, json: { name: 'Tidak Diizinkan' } })).status, 403);
+  assert.equal((await api('GET', '/api/admins', { token: emp1 })).status, 403);
   assert.equal((await api('GET', `/api/attendance/history?employee_id=${e1.id}`, { token: emp2 })).status, 403);
   const own = await api('GET', '/api/attendance/history', { token: emp2 });
   assert.equal(own.body.meta.total, 0);

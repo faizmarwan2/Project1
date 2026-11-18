@@ -25,7 +25,7 @@ router.get('/me', auth, wrap((req, res) => {
   const emp = req.user.employee_id
     ? db.prepare('SELECT id, employee_code, name, status FROM employees WHERE id = ?').get(req.user.employee_id)
     : null;
-  res.json({ id: req.user.id, email: req.user.email, role: req.user.role, employee: emp });
+  res.json({ id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role, account_code: req.user.account_code, employee: emp });
 }));
 
 module.exports = router;

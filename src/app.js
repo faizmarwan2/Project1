@@ -11,6 +11,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public'))); // web HR
 app.get('/health', (_q, r) => r.json({ ok: true }));
 app.use('/api', require('./routes/auth'));
+app.use('/api/admins', require('./routes/admins'));
 app.use('/api/employees', require('./routes/employees'));
 app.use('/api/offices', require('./routes/offices'));
 app.use('/api/attendance', require('./routes/attendance'));

@@ -1,11 +1,12 @@
 const bcrypt = require('bcryptjs');
 const cfg = require('./config');
 const db = require('./db');
+const nextHrCode = require('./utils/hr-code');
 
 function ensureSeed() {
   if (!db.prepare("SELECT 1 FROM users WHERE role='HR'").get()) {
-    db.prepare("INSERT INTO users (email, password_hash, role) VALUES (?,?, 'HR')")
-      .run(cfg.hrEmail.toLowerCase(), bcrypt.hashSync(cfg.hrPassword, 10));
+    db.prepare("INSERT INTO users (account_code, email, password_hash, role) VALUES (?,?,?, 'HR')")
+      .run(nextHrCode(), cfg.hrEmail.toLowerCase(), bcrypt.hashSync(cfg.hrPassword, 10));
     console.log(`[seed] HR admin: ${cfg.hrEmail} / ${cfg.hrPassword}`);
   }
   if (!db.prepare('SELECT 1 FROM offices').get()) {
