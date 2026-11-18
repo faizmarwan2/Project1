@@ -3,6 +3,19 @@ process.env.UPLOAD_DIR = './uploads-test';
 require('fs').rmSync('./data/test.db', { force: true });
 require('fs').rmSync('./data/test.db-wal', { force: true });
 require('fs').rmSync('./data/test.db-shm', { force: true });
+require('fs').mkdirSync('./data', { recursive: true });
+const { DatabaseSync } = require('node:sqlite');
+const legacyDb = new DatabaseSync('./data/test.db');
+legacyDb.exec(`CREATE TABLE employees (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  employee_code TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+)`);
+const addLegacyEmployee = legacyDb.prepare("INSERT INTO employees (employee_code, name, status) VALUES (?, ?, 'INACTIVE')");
+['ky02', 'EMP098', 'ky01'].forEach((code, index) => addLegacyEmployee.run(code, `Legacy ${index + 1}`));
+legacyDb.close();
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -38,17 +51,19 @@ test.before(async () => {
 test.after(() => server.close());
 
 test('HR membuat karyawan + akun (email otomatis)', async () => {
+  const migrated = await api('GET', '/api/employees?status=INACTIVE', { token: hr });
+  assert.deepEqual(migrated.body.data.map((e) => e.employee_code), ['ky01', 'ky02', 'ky03']);
   const a = await api('POST', '/api/employees', { token: hr, json: { name: 'Budi Santoso' } });
   assert.equal(a.status, 201); assert.equal(a.body.email, 'budi.santoso@ethes.tech'); assert.ok(a.body.initial_password);
-  assert.equal(a.body.employee_code, 'ky01');
+  assert.equal(a.body.employee_code, 'ky04');
   e1 = a.body;
   const b = await api('POST', '/api/employees', { token: hr, json: { name: 'Budi Santoso' } });
-  assert.equal(b.body.email, 'budi.santoso2@ethes.tech'); assert.equal(b.body.employee_code, 'ky02'); e2 = b.body;
+  assert.equal(b.body.email, 'budi.santoso2@ethes.tech'); assert.equal(b.body.employee_code, 'ky05'); e2 = b.body;
   const c = await api('POST', '/api/employees', { token: hr, json: { name: 'Asep Santoso' } });
-  assert.equal(c.body.employee_code, 'ky03');
+  assert.equal(c.body.employee_code, 'ky06');
   await api('PUT', `/api/employees/${c.body.id}`, { token: hr, json: { status: 'INACTIVE' } });
   const list = await api('GET', '/api/employees', { token: hr });
-  assert.deepEqual(list.body.data.map((e) => e.employee_code), ['ky01', 'ky02', 'ky03']);
+  assert.deepEqual(list.body.data.map((e) => e.employee_code), ['ky01', 'ky02', 'ky03', 'ky04', 'ky05', 'ky06']);
   emp1 = (await api('POST', '/api/login', { json: { email: e1.email, password: e1.initial_password } })).body.token;
   emp2 = (await api('POST', '/api/login', { json: { email: e2.email, password: e2.initial_password } })).body.token;
   assert.ok(emp1 && emp2);
@@ -123,5 +138,5 @@ test('HR menghapus karyawan, riwayatnya, dan tidak memakai ulang ID', async () =
   assert.equal(history.body.meta.total, 0);
   assert.equal((await api('DELETE', `/api/employees/${e2.id}`, { token: hr })).status, 200);
   const next = await api('POST', '/api/employees', { token: hr, json: { name: 'Citra Baru' } });
-  assert.equal(next.body.employee_code, 'ky04');
+  assert.equal(next.body.employee_code, 'ky07');
 });
