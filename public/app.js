@@ -291,13 +291,14 @@ async function pgEmployees(v) {
       $('#ebody').innerHTML = rows.length ? `<div class="tw"><table><thead><tr><th>Kode</th><th>Nama</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody>
         ${rows.map((e, i) => `<tr><td>${esc(e.employee_code)}</td><td>${esc(e.name)}</td><td>${esc(e.email || '–')}</td>
           <td>${e.status === 'ACTIVE' ? '<span class="badge b-ok">Aktif</span>' : '<span class="badge b-off">Nonaktif</span>'}</td>
-          <td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-e="${i}">Ubah</button> <button class="btn ghost sm" data-r="${i}">Reset password</button></td></tr>`).join('')}
+          <td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-e="${i}">Ubah</button> <button class="btn ghost sm" data-r="${i}">Reset password</button> <button class="btn ghost sm" data-del="${i}">Hapus</button></td></tr>`).join('')}
         </tbody></table></div>
         <div class="pager"><span>${m.total} karyawan · halaman ${m.page} dari ${Math.max(1, m.total_pages)}</span>
         <span><button class="btn ghost sm" id="pv" ${m.page <= 1 ? 'disabled' : ''}>Sebelumnya</button> <button class="btn ghost sm" id="nx" ${m.page >= m.total_pages ? 'disabled' : ''}>Berikutnya</button></span></div>`
         : '<div class="empty">Belum ada karyawan yang cocok. Klik “Tambah karyawan” untuk membuat yang pertama.</div>';
       document.querySelectorAll('[data-e]').forEach((b) => (b.onclick = () => empForm(rows[+b.dataset.e], load)));
       document.querySelectorAll('[data-r]').forEach((b) => (b.onclick = () => resetPw(rows[+b.dataset.r])));
+      document.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => deleteEmployee(rows[+b.dataset.del], load)));
       const pv = $('#pv'), nx = $('#nx');
       if (pv) pv.onclick = () => { f.page--; load(); }; if (nx) nx.onclick = () => { f.page++; load(); };
     } catch (e) { $('#ebody').innerHTML = errBox(e.message); }
@@ -312,7 +313,7 @@ function empForm(e, reload) {
   const edit = !!e;
   const d = modal(`<form novalidate><h2>${edit ? 'Ubah karyawan' : 'Tambah karyawan'}</h2><div id="fe"></div>
     <label>Nama<input name="name" required value="${esc(e?.name)}"></label>
-    <label>Kode karyawan${edit ? '' : ' <span class="hint">(opsional, otomatis EMP001, EMP002…)</span>'}<input name="employee_code" value="${esc(e?.employee_code)}"></label>
+    <label>Kode karyawan${edit ? '' : ' <span class="hint">(opsional; auto increment: ky01, ky02, ...)</span>'}<input name="employee_code" value="${esc(e?.employee_code)}"></label>
     <label>Email login${edit ? '' : ' <span class="hint">(opsional, otomatis nama.depan@ethes.tech)</span>'}<input name="email" type="email" value="${esc(e?.email)}"></label>
     ${edit ? `<label>Status<select name="status"><option value="ACTIVE" ${e.status === 'ACTIVE' ? 'selected' : ''}>Aktif</option><option value="INACTIVE" ${e.status === 'INACTIVE' ? 'selected' : ''}>Nonaktif</option></select>
       <span class="hint">Karyawan nonaktif tidak bisa login dan IN/OUT. Riwayat tetap tersimpan.</span></label>` : ''}
@@ -330,6 +331,23 @@ function empForm(e, reload) {
       if (!edit) credsDialog('Karyawan ditambahkan', r.name, r.email, r.initial_password); else { closeModal(); toast('Perubahan disimpan'); }
       reload();
     } catch (err) { $('#fe', d).innerHTML = errBox(err.message); b.disabled = false; }
+  };
+}
+
+function deleteEmployee(e, reload) {
+  const d = modal(`<div class="box"><h2>Hapus karyawan?</h2>
+    <p>Hapus <b>${esc(e.name)}</b> (${esc(e.employee_code)}) secara permanen? Akun login, riwayat absensi, dan foto absensi juga akan dihapus.</p>
+    <div id="de"></div>
+    <div class="actions"><button type="button" class="btn ghost" id="cancel">Batal</button><button type="button" class="btn" id="confirm">Hapus permanen</button></div></div>`);
+  $('#cancel', d).onclick = closeModal;
+  $('#confirm', d).onclick = async (ev) => {
+    ev.target.disabled = true; $('#de', d).innerHTML = '';
+    try {
+      const r = await api('/employees/' + e.id, { method: 'DELETE' });
+      closeModal();
+      toast(r.warning || 'Karyawan berhasil dihapus', !!r.warning);
+      reload();
+    } catch (err) { $('#de', d).innerHTML = errBox(err.message); ev.target.disabled = false; }
   };
 }
 

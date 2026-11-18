@@ -40,9 +40,15 @@ test.after(() => server.close());
 test('HR membuat karyawan + akun (email otomatis)', async () => {
   const a = await api('POST', '/api/employees', { token: hr, json: { name: 'Budi Santoso' } });
   assert.equal(a.status, 201); assert.equal(a.body.email, 'budi.santoso@ethes.tech'); assert.ok(a.body.initial_password);
+  assert.equal(a.body.employee_code, 'ky01');
   e1 = a.body;
   const b = await api('POST', '/api/employees', { token: hr, json: { name: 'Budi Santoso' } });
-  assert.equal(b.body.email, 'budi.santoso2@ethes.tech'); e2 = b.body;
+  assert.equal(b.body.email, 'budi.santoso2@ethes.tech'); assert.equal(b.body.employee_code, 'ky02'); e2 = b.body;
+  const c = await api('POST', '/api/employees', { token: hr, json: { name: 'Asep Santoso' } });
+  assert.equal(c.body.employee_code, 'ky03');
+  await api('PUT', `/api/employees/${c.body.id}`, { token: hr, json: { status: 'INACTIVE' } });
+  const list = await api('GET', '/api/employees', { token: hr });
+  assert.deepEqual(list.body.data.map((e) => e.employee_code), ['ky01', 'ky02', 'ky03']);
   emp1 = (await api('POST', '/api/login', { json: { email: e1.email, password: e1.initial_password } })).body.token;
   emp2 = (await api('POST', '/api/login', { json: { email: e2.email, password: e2.initial_password } })).body.token;
   assert.ok(emp1 && emp2);
@@ -103,4 +109,19 @@ test('HR: filter tanggal, status, dashboard', async () => {
 test('karyawan nonaktif tidak bisa login', async () => {
   await api('PUT', `/api/employees/${e2.id}`, { token: hr, json: { status: 'INACTIVE' } });
   assert.equal((await api('POST', '/api/login', { json: { email: e2.email, password: e2.initial_password } })).status, 403);
+});
+
+test('HR menghapus karyawan, riwayatnya, dan tidak memakai ulang ID', async () => {
+  const workDate = (await api('GET', '/api/attendance/today', { token: emp1 })).body.work_date;
+  const deleted = await api('DELETE', `/api/employees/${e1.id}`, { token: hr });
+  assert.equal(deleted.status, 200);
+  assert.equal(deleted.body.ok, true);
+  assert.equal(deleted.body.warning, undefined);
+  assert.equal((await api('GET', `/api/employees/${e1.id}`, { token: hr })).status, 404);
+  assert.equal((await api('POST', '/api/login', { json: { email: e1.email, password: e1.initial_password } })).status, 401);
+  const history = await api('GET', `/api/attendance?date=${workDate}`, { token: hr });
+  assert.equal(history.body.meta.total, 0);
+  assert.equal((await api('DELETE', `/api/employees/${e2.id}`, { token: hr })).status, 200);
+  const next = await api('POST', '/api/employees', { token: hr, json: { name: 'Citra Baru' } });
+  assert.equal(next.body.employee_code, 'ky04');
 });
