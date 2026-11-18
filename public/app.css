@@ -235,6 +235,7 @@ body{background:var(--paper);color:var(--text)}
 .account-list-card{overflow:hidden;border-color:#c9d3cf;background:#eff8f5}
 .account-list-card th{padding:10px 18px;border-bottom-color:#c1cbc7;background:#d7d7d7;color:#5a6663;font-size:14px}
 .account-list-card td{padding:8px 18px;font-size:13px}
+.table-actions{text-align:right;white-space:nowrap}
 .account-list-card .pager{background:#eff8f5}
 .account-list-card .b-off{background:#ecebea;color:#e25757}
 .account-list-card button[data-e]{border:0;background:#1685dc;color:#fff}
@@ -353,7 +354,7 @@ dialog,#toast{border-radius:0}
   .tw tr:last-child{border-bottom:0}
   .tw td{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;padding:7px 4px;border:0;overflow-wrap:anywhere}
   .tw td::before{content:attr(data-label);font-weight:600;color:#5a6663}
-  .tw td.table-actions,.tw td.office-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start;white-space:normal}
+  .tw td.table-actions,.tw td.office-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;white-space:normal}
   .tw td.table-actions::before,.tw td.office-actions::before{flex:1 0 100%;text-align:left}
   .tw td.table-actions button,.tw td.office-actions button{margin:0}
   .tw td .thumb{width:44px;height:44px}
