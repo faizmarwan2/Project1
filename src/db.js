@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
 const cfg = require('./config');
 
@@ -45,5 +46,19 @@ CREATE TABLE IF NOT EXISTS attendances (
 );
 CREATE INDEX IF NOT EXISTS idx_att_date ON attendances(work_date);
 `);
+
+if (db.prepare('PRAGMA user_version').get().user_version < 1) {
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if (db.prepare('PRAGMA user_version').get().user_version < 1) {
+      const employees = db.prepare('SELECT id FROM employees ORDER BY id').all();
+      const updateCode = db.prepare('UPDATE employees SET employee_code = ? WHERE id = ?');
+      employees.forEach(({ id }) => updateCode.run(`__migration_${crypto.randomUUID()}__`, id));
+      employees.forEach(({ id }, index) => updateCode.run(`ky${String(index + 1).padStart(2, '0')}`, id));
+      db.exec('PRAGMA user_version = 1');
+    }
+    db.exec('COMMIT');
+  } catch (err) { db.exec('ROLLBACK'); throw err; }
+}
 
 module.exports = db;
