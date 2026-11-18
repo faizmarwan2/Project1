@@ -177,11 +177,11 @@ Bila ambang tidak terpenuhi, status rilis: **Tidak siap demo** dan defect dipind
 
 | Tanggal | Aktivitas | Keluaran |
 |---|---|---|
-| 17 Nov | Siapkan environment, eksekusi TC-01..TC-18 (auth & karyawan) | Hasil + defect awal |
-| 18 Nov | Eksekusi TC-19..TC-45 (office, absensi, batas waktu) | Hasil + regresi |
-| 19 Nov | Eksekusi TC-46..TC-61 (riwayat, dashboard, Web), UAT, rekap | Laporan hasil + sign-off |
+| 17 Nov | Siapkan environment, eksekusi `TC-AUTH-01` … `TC-AUTH-09` dan `TC-EMP-01` … `TC-EMP-15` (auth & karyawan) | Hasil + defect awal |
+| 18 Nov | Eksekusi `TC-ADM-01` … `TC-ADM-03`, `TC-OFF-01` … `TC-OFF-06`, `TC-ATT-01` … `TC-ATT-06` (akun HR, office, absensi) | Hasil + regresi |
+| 19 Nov | Eksekusi `TC-ATT-07` … `TC-ATT-14`, `TC-HIS-01` … `TC-HIS-10`, `TC-DSH-01` … `TC-DSH-02`, `TC-WEB-01` … `TC-WEB-02`; UAT; rekap | Laporan hasil + sign-off |
 
-**Siklus regresi:** setiap perbaikan defect S1/S2 wajib menjalankan ulang TC terkait + TC-01..TC-13 (smoke).
+**Siklus regresi:** setiap perbaikan defect S1/S2 wajib menjalankan ulang TC terkait + **smoke pack 13 TC** (`10-Test-Case.md` §2).
 
 ---
 
@@ -227,7 +227,7 @@ Build   : <commit / waktu build>
 Dijalankan : 28 TC
 Lulus      : 25
 Gagal      : 2  -> BUG-001 (S2), BUG-002 (S3)
-Blocked    : 1  -> TC-57 (butuh data > 5.000 baris)
+Blocked    : 1  -> TC-HIS-09 (butuh data > 5.000 baris)
 Catatan    : ...
 ```
 
@@ -237,8 +237,8 @@ Catatan    : ...
 
 | Jenis bukti | Format nama | Contoh |
 |---|---|---|
-| Screenshot | `TC-<id>-<ringkas>.png` | `TC-08-radius.png` |
-| Log/response | `TC-<id>.json` | `TC-02-401.json` |
+| Screenshot | `TC-<MOD>-<NN>-<ringkas>.png` | `TC-ATT-06-radius.png` |
+| Log/response | `TC-<MOD>-<NN>.json` | `TC-AUTH-01-401.json` |
 | Rekaman layar | `UAT-<id>.mp4` | `UAT-03-checkin.mp4` |
 | Laporan siklus | `QA-REPORT-<tanggal>.md` | `QA-REPORT-2026-11-19.md` |
 

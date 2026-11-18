@@ -191,14 +191,14 @@ Disalin dari `TASK.md` §7.1 agar dapat dipakai tanpa berpindah dokumen.
 
 | Bila berubah | Wajib diperbarui | Wajib diuji ulang |
 |---|---|---|
-| Endpoint / peran | `01` §6, `02`, `12` | TC endpoint terkait + TC-02, TC-16 |
-| Aturan waktu | `01` §5, `05` FC-04, `06` ATT-07 | TC-04, TC-47, TC-10 |
-| Skema tabel | `04`, `01` §7 | TC-01, TC-05, TC-48 |
-| Status absensi | `01` §5, `04` §4, `05` FC-03 | TC-41, TC-42, TC-48 |
-| Filter tanggal | `01` §5, `05` FC-05, `06` HIS-04..06 | TC-10, TC-49..TC-53 |
-| Dashboard | `01` §3 DSH, `05` FC-06, `06` DSH | TC-58, TC-59 |
-| Tampilan Web | `07` story WEB, `10` TC-60/61 | TC-17, TC-60, TC-61 |
-| Middleware auth | `01` §0, `05` FC-02 | TC-02, TC-16, TC-17 |
+| Endpoint / peran | `01` §6, `02`, `12` | TC endpoint terkait + TC-AUTH-01, TC-AUTH-06 |
+| Aturan waktu | `01` §5, `05` FC-04, `06` ATT-07 | TC-ATT-01, TC-ATT-13, TC-HIS-10 |
+| Skema tabel | `04`, `01` §7 | TC-EMP-01, TC-ATT-02, TC-ATT-14 |
+| Status absensi | `01` §5, `04` §4, `05` FC-03 | TC-ATT-07, TC-ATT-08, TC-ATT-14 |
+| Filter tanggal | `01` §5, `05` FC-05, `06` HIS-04..06 | TC-HIS-10, `TC-HIS-01` … `TC-HIS-05` |
+| Dashboard | `01` §3 DSH, `05` FC-06, `06` DSH | TC-DSH-01, TC-DSH-02 |
+| Tampilan Web | `07` story WEB, `10` TC-WEB-01, TC-WEB-02 | TC-AUTH-09, TC-WEB-01, TC-WEB-02 |
+| Middleware auth | `01` §0, `05` FC-02 | TC-AUTH-01, TC-AUTH-06, TC-AUTH-09 |
 
 ---
 

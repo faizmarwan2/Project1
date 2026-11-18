@@ -11,6 +11,8 @@
 | Status | **Sudah diisi dari eksekusi QA** — 14 Lulus, 1 Blocked (UAT-11), 0 Gagal |
 
 > **Cara membaca lembar ini.** Kolom "Hasil aktual", "Status", dan "Bukti" diisi dari eksekusi nyata yang terdokumentasi di `10-Test-Case.md` dan `docs/Project A - QA Test Cases.xlsx` — bukan dari perkiraan. Kolom tanda tangan dan keputusan akhir **masih kosong** dan hanya boleh diisi pada sesi UAT resmi bersama penguji. Dengan demikian lembar ini mencatat *kesiapan* sistem, bukan keputusan penerimaan pengguna.
+>
+> **Cara membaca kolom Bukti.** Rujukan berawalan `TC-` adalah **test case fungsional** (`10-Test-Case.md`). Rujukan berbentuk `hasil-*.json#NAMA` adalah **satu butir eksekusi otomatis** di dalam berkas hasil tersebut — nama itu milik suite otomatis, bukan test case fungsional.
 
 ---
 
@@ -68,7 +70,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Hanya layar Login tampil; tidak ada data; API membalas `401 UNAUTHORIZED` |
 | Hasil aktual | Layar hanya menampilkan Login; akses langsung `#/karyawan` tanpa token diarahkan ke Login dan tabel tidak dirender; `GET /api/attendance/today` tanpa token dibalas `401 UNAUTHORIZED`. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-WEB-01, TC-WEBX-01 (hasil-ui.json, hasil-ui2.json); TC-AUTH-07 |
+| Bukti | `TC-AUTH-01`, `TC-WEB-01` — `hasil-ui.json#WEB-01`, `hasil-ui2.json#WEBX-01`, `hasil-api.json#AUTH-07` |
 
 ### UAT-02 — HR menambah karyawan
 
@@ -81,7 +83,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Karyawan muncul; kode otomatis; email `budi.santoso@ethes.tech`; password awal tampil **sekali**; pencarian menemukan data |
 | Hasil aktual | Karyawan tersimpan dan muncul di daftar; kode otomatis `kyNN`; email otomatis `nama@ethes.tech` (bila bentrok diberi akhiran angka); password awal 12 karakter tampil sekali pada dialog kredensial; pencarian menemukan data. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-WEB-09, TC-WEB-10, TC-AUTH-17; TC-EMP-01, TC-EMP-23 |
+| Bukti | `TC-EMP-01`, `TC-EMP-02`, `TC-EMP-03`, `TC-EMP-09`, `TC-WEB-02` — `hasil-ui.json#WEB-09`, `hasil-ui.json#WEB-10`, `hasil-api.json#AUTH-17`, `hasil-api.json#EMP-01`, `hasil-api.json#EMP-23` |
 
 ### UAT-03 — Karyawan check-in
 
@@ -94,7 +96,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Muncul `SUDAH_IN` beserta jam masuk; status `TEPAT_WAKTU` atau `TERLAMBAT`; foto dan jarak tersimpan |
 | Hasil aktual | `state=SUDAH_IN`, `check_in_at` terisi, status `TERLAMBAT` (eksekusi pukul 22:29 WIB — di luar jam kerja), `distance_m=0`, foto tersimpan dan dapat diambil kembali. Dijalankan lewat klien API. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-MOB-05, TC-MOB-13, TC-ATT-23 |
+| Bukti | `TC-ATT-01`, `TC-ATT-06`, `TC-ATT-09`, `TC-ATT-13` — `hasil-api.json#MOB-05`, `hasil-api.json#MOB-13`, `hasil-api.json#ATT-23` |
 
 ### UAT-04 — Check-in kedua ditolak
 
@@ -107,7 +109,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Pesan "sudah IN"; tidak ada record baru; riwayat tetap satu baris |
 | Hasil aktual | IN kedua dibalas `409 ALREADY_CHECKED_IN`; jumlah baris tetap 1; dua permintaan paralel menghasilkan tepat satu 201 dan satu 409. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-MOB-07, TC-ATT-03, TC-ATT-21 |
+| Bukti | `TC-ATT-02`, `TC-ATT-14` — `hasil-api.json#MOB-07`, `hasil-api.json#ATT-03`, `hasil-api.json#ATT-21` |
 
 ### UAT-05 — Karyawan check-out
 
@@ -120,7 +122,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Status `SUDAH_OUT`; jam keluar tampil |
 | Hasil aktual | `state=SUDAH_OUT`, `check_out_at` terisi, `out.distance_m` tercatat. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-MOB-08, TC-ATT-04 |
+| Bukti | `TC-ATT-04` — `hasil-api.json#MOB-08`, `hasil-api.json#ATT-04` |
 
 ### UAT-06 — Check-out kedua ditolak
 
@@ -133,7 +135,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Pesan "sudah OUT"; jam keluar tidak berubah |
 | Hasil aktual | OUT kedua dibalas `409 ALREADY_CHECKED_OUT`; `check_out_at` tidak berubah. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-MOB-10, TC-ATT-05 |
+| Bukti | `TC-ATT-05` — `hasil-api.json#MOB-10`, `hasil-api.json#ATT-05` |
 
 ### UAT-07 — Dashboard HR
 
@@ -146,7 +148,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Angka konsisten dengan daftar; ketiga tab berisi data yang sesuai; tren 7 hari tampil |
 | Hasil aktual | Angka dashboard konsisten dengan daftar absensi tanggal yang sama (`sudah_in` 4 = 4 baris; pada eksekusi lain 13 = 13); tab Terlambat/Belum OUT/Belum IN berisi data yang sesuai; tren 7 titik tampil dan angkanya sama dengan hitungan DB. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-DSHF-01..TC-DSHF-10; TC-WEB-04; TC-WEBX-10 |
+| Bukti | `TC-DSH-01`, `TC-DSH-02`, `TC-HIS-10` — `hasil-api.json#DSHF-01` … `hasil-api.json#DSHF-10`, `hasil-ui.json#WEB-04`, `hasil-ui2.json#WEBX-10` |
 
 ### UAT-08 — Riwayat karyawan
 
@@ -159,7 +161,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Hanya data sendiri yang tampil; permintaan data orang lain ditolak `403` |
 | Hasil aktual | Riwayat hanya berisi data pemilik token; permintaan `?employee_id=<orang lain>` dibalas `403 FORBIDDEN` tanpa data. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-MOB-11, TC-MOB-12, TC-ATT-06 |
+| Bukti | `TC-HIS-07`, `TC-AUTH-07` — `hasil-api.json#MOB-11`, `hasil-api.json#MOB-12`, `hasil-api.json#ATT-06` |
 
 ### UAT-09 — Absensi di luar radius
 
@@ -172,7 +174,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Ditolak dengan pesan yang menyebut nama office, jarak, dan radius maksimum |
 | Hasil aktual | Ditolak `403 OUTSIDE_RADIUS` dengan pesan yang menyebut nama office, jarak (`distance_m`) dan radius (`radius_m`). |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-MOB-19 |
+| Bukti | `TC-ATT-06` — `hasil-api.json#MOB-19` |
 
 ### UAT-10 — Token kedaluwarsa
 
@@ -185,7 +187,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Kembali ke layar Login; tidak ada data yang tampil; tidak ada status berhasil |
 | Hasil aktual | Token kedaluwarsa/rusak: API membalas `401 UNAUTHORIZED`; Web HR kembali ke Login dan token dibersihkan. Catatan: bila sesi berakhir saat daftar sedang dimuat, konsol mencatat `TypeError` (BUG-02) — tampilan tetap kembali ke Login. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-AUTH-10, TC-WEB-15, TC-WEBX-04; BUG-02 |
+| Bukti | `TC-AUTH-01`, `TC-AUTH-05`, `TC-AUTH-09` — `hasil-api.json#AUTH-10`, `hasil-ui.json#WEB-15`, `hasil-ui2.json#WEBX-04`; BUG-02 |
 
 ### UAT-11 — Jaringan gagal saat check-in
 
@@ -211,7 +213,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Pesan "Akun ini bukan HR…"; tetap di Login; Dashboard tidak terbuka |
 | Hasil aktual | Login akun karyawan di Web HR menampilkan "Akun ini bukan HR. Karyawan login lewat aplikasi mobile."; tetap di layar Login; menu HR tidak tampil dan tidak ada data yang terbuka. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-WEBX-03, TC-WEBX-04 |
+| Bukti | `TC-AUTH-09` — `hasil-ui2.json#WEBX-03`, `hasil-ui2.json#WEBX-04` |
 
 ### UAT-13 — Kelola office & radius
 
@@ -224,7 +226,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Office tersimpan; perubahan radius berlaku; office nonaktif hilang dari daftar aktif; radius 5 m ditolak dengan pesan validasi |
 | Hasil aktual | Office baru tersimpan (`201`, `radius_m=150`, aktif); perubahan radius berlaku (`200`, radius 200); office nonaktif hilang dari daftar aktif lalu muncul lagi saat diaktifkan; radius 5 m ditolak `400 VALIDATION` "radius_m harus 10-5000 meter". Dijalankan lewat API; halaman Office di Web HR tampil normal. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-EMP-01..TC-EMP-12 (hasil-extra.json); TC-WEB-12 |
+| Bukti | `TC-OFF-01` … `TC-OFF-05` — `hasil-extra.json#EMP-01` … `hasil-extra.json#EMP-12`, `hasil-ui.json#WEB-12` |
 
 ### UAT-14 — Tambah akun HR
 
@@ -237,7 +239,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | `account_code` berikutnya (`HR02`); akun baru dapat login dan membuka Dashboard |
 | Hasil aktual | Akun HR baru dibuat dengan `account_code=HR02` (uji lain HR05, HR06) dan password awal 12 karakter; akun baru dapat login (`role=HR`) dan `/api/me` menunjukkan kode yang sama. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-EMP-20, TC-WEBX-09, TC-EMP-03 (hasil-probes.json) |
+| Bukti | `TC-ADM-01`, `TC-ADM-02`, `TC-ADM-03`, `TC-EMP-01` — `hasil-api.json#EMP-20`, `hasil-ui2.json#WEBX-09`, `hasil-probes.json#EMP-03` |
 
 ### UAT-15 — Ekspor CSV
 
@@ -250,7 +252,7 @@ Membuktikan bahwa sistem memenuhi kebutuhan pengguna nyata — bukan sekadar lol
 | Hasil diharapkan | Berkas terunduh; kolom lengkap; baris sesuai filter |
 | Hasil aktual | Berkas `absensi-<tanggal>.csv` terunduh dengan kolom Tanggal, Kode, Nama, IN, OUT, Status, Jarak IN (m), Jarak OUT (m); jumlah baris mengikuti filter (6 baris pada filter 7 hari); nama berisi `=1+1` ditulis `'=1+1` sehingga aman dari formula injection. |
 | Status | ☑ Lulus ☐ Gagal ☐ Blocked |
-| Bukti | TC-WEB-13, TC-WEBX-11 |
+| Bukti | `TC-HIS-09` — `hasil-ui.json#WEB-13`, `hasil-ui2.json#WEBX-11` |
 
 ---
 

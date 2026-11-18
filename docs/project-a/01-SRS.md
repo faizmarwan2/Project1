@@ -489,17 +489,17 @@ Gagal (`src/app.js:28`):
 
 | Sumber | Kebutuhan | FR | UC | Tes |
 |---|---|---|---|---|
-| — | Semua fitur wajib login | FR-AUTH-00, FR-AUTH-04, FR-AUTH-05 | UC-01, UC-02 | TC-01, TC-02 |
-| ATT-01 | IN pertama berhasil | FR-ATT-02 | UC-11 | TC-05 |
-| ATT-02 | IN kedua ditolak | FR-ATT-03, FR-ATT-13 | UC-11 | TC-06 |
-| ATT-03 | OUT tanpa IN ditolak | FR-ATT-04 | UC-12 | TC-07 |
-| ATT-04 | OUT setelah IN berhasil | FR-ATT-05 | UC-12 | TC-08 |
-| ATT-05 | OUT kedua ditolak | FR-ATT-06 | UC-12 | TC-09 |
-| ATT-06 | Data orang lain ditolak | FR-HIS-02, FR-AUTH-05 | UC-13 | TC-10 |
-| ATT-07 | Token tidak valid → 401 | FR-AUTH-04, FR-AUTH-08 | UC-01 | TC-03 |
-| ATT-08 | Tidak ada sukses palsu | NFR-08 | UC-11, UC-12 | TC-11 |
-| Demo 1.5 | HR tambah karyawan | FR-EMP-01..03 | UC-03 | TC-04 |
-| Demo 1.5 | Riwayat & dashboard konsisten | FR-DSH-05 | UC-17 | TC-12 |
+| — | Semua fitur wajib login | FR-AUTH-00, FR-AUTH-04, FR-AUTH-05 | UC-01, UC-02 | TC-AUTH-01, TC-EMP-01 |
+| ATT-01 | IN pertama berhasil | FR-ATT-02, FR-ATT-07 | UC-11 | TC-ATT-01 |
+| ATT-02 | IN kedua ditolak | FR-ATT-03, FR-ATT-13 | UC-11 | TC-ATT-02 |
+| ATT-03 | OUT tanpa IN ditolak | FR-ATT-04 | UC-12 | TC-ATT-03 |
+| ATT-04 | OUT setelah IN berhasil | FR-ATT-05 | UC-12 | TC-ATT-04 |
+| ATT-05 | OUT kedua ditolak | FR-ATT-06 | UC-12 | TC-ATT-05 |
+| ATT-06 | Data orang lain ditolak | FR-HIS-02, FR-AUTH-05 | UC-13 | TC-AUTH-07 |
+| ATT-07 | Token tidak valid → 401 | FR-AUTH-04, FR-AUTH-08 | UC-01 | TC-AUTH-01 |
+| ATT-08 | Tidak ada sukses palsu | NFR-08 | UC-11, UC-12 | TC-AUTH-09, TC-WEB-02 |
+| Demo 1.5 | HR tambah karyawan | FR-EMP-01..03 | UC-03 | TC-EMP-01, TC-EMP-02 |
+| Demo 1.5 | Riwayat & dashboard konsisten | FR-DSH-05 | UC-17 | TC-HIS-10, TC-DSH-02 |
 
 ---
 

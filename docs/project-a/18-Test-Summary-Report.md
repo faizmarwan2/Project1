@@ -87,7 +87,7 @@ Bukti per TC (langkah, *Input Data*, *Expected Result*, *Actual Results*, *Notes
 | ID | Judul | Severity | Status | FR | TC |
 |---|---|---|---|---|---|
 | BUG-01 | Respons web tidak memuat header keamanan HTTP | S3 | `Baru` | — (OBS-03/OBS-07) | ST-44 |
-| BUG-02 | `TypeError` saat sesi berakhir ketika daftar sedang dimuat | S4 | `Baru` | NFR-10 | TC-WEBX-15 |
+| BUG-02 | `TypeError` saat sesi berakhir ketika daftar sedang dimuat | S4 | `Baru` | NFR-10 | `hasil-ui2.json#WEBX-15` |
 | BUG-03 | Kredensial HR tercetak pada log saat seeding | S2 | `Baru` | NFR-04 | ST-25 |
 
 **Defect terbuka yang memengaruhi keputusan:**
@@ -271,7 +271,7 @@ Kendala:
 | Berkas | Nama | Lokasi usulan |
 |---|---|---|
 | Laporan siklus | `QA-RPT-YYYYMMDD-NN.md` | `docs/project-a/reports/` |
-| Bukti TC | `TC-NN-<ringkas>.png` / `.json` | `docs/project-a/evidence/` |
+| Bukti TC | `TC-<MOD>-<NN>-<ringkas>.png` / `.json` | `docs/project-a/evidence/` |
 | Bukti UAT | `UAT-NN-<ringkas>.mp4` | `docs/project-a/evidence/` |
 | Log otomasi | `run-YYYYMMDD-HHMM.txt` | `docs/project-a/evidence/` |
 

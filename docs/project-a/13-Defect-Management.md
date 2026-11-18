@@ -126,7 +126,7 @@ Contoh: `BUG-20261118-01`
 | Lingkungan | OS, Node, browser/klien |
 | Modul | AUTH / EMP / ADM / OFF / ATT / HIS / DSH / WEB |
 | FR terkait | FR-xxx-NN |
-| Test case | TC-NN |
+| Test case | TC-<MOD>-<NN> |
 | Severity | S1 / S2 / S3 / S4 |
 | Priority | P1 / P2 / P3 / P4 |
 | Status | Baru |
@@ -143,7 +143,7 @@ Contoh: `BUG-20261118-01`
 
 
 ### Bukti
-- `TC-NN-*.png`
+- `TC-<MOD>-<NN>-*.png`
 - respons JSON / log
 
 ### Dampak
@@ -173,7 +173,7 @@ Contoh: `BUG-20261118-01`
 | Lingkungan | Windows 11, Node 22.13, curl |
 | Modul | ATT |
 | FR terkait | FR-ATT-03 |
-| Test case | TC-05 |
+| Test case | TC-ATT-02 |
 | Severity | S1 |
 | Priority | P1 |
 | Status | Baru |
@@ -189,8 +189,8 @@ Contoh: `BUG-20261118-01`
 201 dan jumlah baris menjadi 2.
 
 ### Bukti
-- TC-05-second-in.json
-- TC-05-db-count.png
+- TC-ATT-02-second-in.json
+- TC-ATT-02-db-count.png
 
 ### Dampak
 Kehadiran ganda; dashboard dan rekap menjadi salah. Tidak ada workaround.
@@ -242,7 +242,7 @@ Tidak ada defect **S1**. BUG-01 dan BUG-02 bersifat konfigurasi/kenyamanan; BUG-
 
 **Hasil aktual** — `x-content-type-options=null`, `x-frame-options=null`, `content-security-policy` tidak ada, `referrer-policy=null`. Tidak ada perlindungan clickjacking, MIME sniffing, maupun CSP.
 
-**Bukti** — `hasil-extra.json` (TC-AUTH-18), `hasil-sec.json` (ST-44).
+**Bukti** — `hasil-extra.json#AUTH-18`, `hasil-sec.json#ST-44`.
 
 **Dampak** — Halaman Web HR dapat dirender dalam iframe pihak lain dan berkas unggahan diperlakukan longgar oleh browser lama. Tidak ada data lintas pengguna yang terbuka; invarian login (§0 `01-SRS.md`) tetap utuh karena seluruh endpoint sudah menolak tanpa token.
 
@@ -262,7 +262,7 @@ Tidak ada defect **S1**. BUG-01 dan BUG-02 bersifat konfigurasi/kenyamanan; BUG-
 | Lingkungan | Windows 11, Node v22.23.2, Chrome headless 1440×900 |
 | Modul | WEB |
 | FR terkait | NFR-10 (loading/error/empty state) |
-| Test case | TC-WEBX-15 (di luar 61 TC) |
+| Test case | `hasil-ui2.json#WEBX-15` (di luar 61 TC) |
 | Severity | S4 |
 | Priority | P3 |
 | Status | `Baru` |
@@ -276,7 +276,7 @@ Tidak ada defect **S1**. BUG-01 dan BUG-02 bersifat konfigurasi/kenyamanan; BUG-
 
 **Hasil aktual** — `TypeError: Cannot set properties of null (setting 'innerHTML')` di `public/app.js:374`. Penyebab: `api()` memanggil `logout()` saat menerima `401`, `logout()` merender ulang `#app`, lalu blok `catch` yang masih berjalan menulis ke elemen hasil render lama. UX tetap benar — pengguna kembali ke Login.
 
-**Bukti** — `hasil-ui2.json` (TC-WEBX-15), `qa/shots/`.
+**Bukti** — `hasil-ui2.json#WEBX-15`, `qa/shots/`.
 
 **Dampak** — Hanya pesan error pada konsol; tidak ada data salah atau akses bocor. Reproduksi deterministik, sehingga layak diperbaiki agar konsol bersih saat demo.
 
@@ -309,7 +309,7 @@ Tidak ada defect **S1**. BUG-01 dan BUG-02 bersifat konfigurasi/kenyamanan; BUG-
 
 **Hasil aktual** — `src/seed.js` mencetak `[seed] HR admin: <email> / <password>` sehingga password HR muncul utuh di konsol. Pemindaian 18 berkas `src/**/*.js` menemukan ini satu-satunya baris log yang memuat kredensial.
 
-**Bukti** — `hasil-sec2.json` (ST-25).
+**Bukti** — `hasil-sec2.json#ST-25`.
 
 **Dampak** — Tidak bocor ke klien, tetapi terbaca oleh siapa pun yang dapat melihat log konsol/CI (mis. saat demo di proyektor atau log pipeline). Workaround: hapus baris log sebelum demo.
 
@@ -396,12 +396,12 @@ Angka ini **usulan** untuk proyek magang 3 hari; sesuaikan dengan kesepakatan me
 
 | Perubahan | Wajib menjalankan ulang |
 |---|---|
-| Perbaikan S1/S2 | TC terkait + **smoke pack TC-01..TC-13** |
-| Perubahan `auth`/`requireRole` | TC-02, TC-16, TC-17 + seluruh endpoint yang terpengaruh |
-| Perubahan `attendance.js` | TC-03..TC-08, TC-41..TC-48 |
-| Perubahan `db.js` | TC-01, TC-05, TC-48 + pemeriksaan migrasi |
-| Perubahan `public/app.js` | TC-17, TC-60, TC-61 |
-| Perubahan `utils/time.js` | TC-04, TC-47 + TC-10 (status di dashboard) |
+| Perbaikan S1/S2 | TC terkait + **smoke pack 13 TC** (`10-Test-Case.md` §2) |
+| Perubahan `auth`/`requireRole` | TC-AUTH-01, TC-AUTH-06, TC-AUTH-09 + seluruh endpoint yang terpengaruh |
+| Perubahan `attendance.js` | `TC-ATT-01` … `TC-ATT-14` |
+| Perubahan `db.js` | TC-EMP-01, TC-ATT-02, TC-ATT-14 + pemeriksaan migrasi |
+| Perubahan `public/app.js` | TC-AUTH-09, TC-WEB-01, TC-WEB-02 |
+| Perubahan `utils/time.js` | TC-ATT-01, TC-ATT-13 + TC-HIS-10 (status di dashboard) |
 
 ### 12.2 Bukti regresi
 

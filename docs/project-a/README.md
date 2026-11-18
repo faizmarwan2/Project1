@@ -38,11 +38,11 @@ Pengecualian publik hanya: `POST /api/login`, `GET /health`, dan aset statis Web
 | 3 | [`03-Activity-Diagram.md`](./03-Activity-Diagram.md) | Activity diagram tiap alur, semua dimulai dari cek token | 15 diagram |
 | 4 | [`04-ERD.md`](./04-ERD.md) | ERD, relasi, kamus data, DDL aktual, indeks, normalisasi, status turunan | 5 tabel |
 | 5 | [`05-Flowchart.md`](./05-Flowchart.md) | Peta sistem, auth guard, state machine, pipeline request, filter, error, matriks keputusan | 11 flowchart · 22 keputusan |
-| 6 | [`06-Functional-Requirement.md`](./06-Functional-Requirement.md) | 63 FR dengan prioritas, status, acceptance criteria, traceability ke kode & tes, gap analysis | 63 FR · 13 TC |
+| 6 | [`06-Functional-Requirement.md`](./06-Functional-Requirement.md) | 63 FR dengan prioritas, status, acceptance criteria, traceability ke kode & tes, gap analysis | 63 FR · 61 TC |
 | 7 | [`07-User-Story.md`](./07-User-Story.md) | Persona, 7 epic, 32 story dengan Gherkin, DoR/DoD, rencana sprint 17–19 Nov | 32 story · 92 poin |
 | 8 | [`08-Business-Process-Documentation.md`](./08-Business-Process-Documentation.md) | As-is vs to-be, 7 proses, sequence diagram, RACI, SLA/KPI usulan, exception, retensi, risiko | 7 proses · 14 exception |
 | 9 | [`09-Test-Plan.md`](./09-Test-Plan.md) | Strategi & level tes, lingkungan, data uji, entry/exit criteria, jadwal, metrik, checklist kesiapan demo | 4 level tes |
-| 10 | [`10-Test-Case.md`](./10-Test-Case.md) | 61 test case rinci: langkah, prasyarat, hasil diharapkan, status eksekusi (**61 Lulus**) | 61 TC |
+| 10 | [`10-Test-Case.md`](./10-Test-Case.md) | 61 test case rinci dengan ID per modul (`TC-<MOD>-NN`): langkah, prasyarat, hasil diharapkan, status eksekusi (**61 Lulus**) | 61 TC |
 | 11 | [`11-UAT.md`](./11-UAT.md) | Lembar UAT 15 skenario, hasil aktual terisi (**14 Lulus, 1 Blocked**), tanda tangan menunggu sesi resmi | 15 UAT |
 | 12 | [`12-Traceability-Matrix.md`](./12-Traceability-Matrix.md) | RTM FR → UC → TC → UAT, cakupan per modul, NFR → bukti, aturan pemeliharaan | 63 FR · 61 TC |
 | 13 | [`13-Defect-Management.md`](./13-Defect-Management.md) | Severity & priority, siklus hidup, template laporan, **3 defect tercatat (BUG-01..BUG-03)**, daftar "bukan defect", SLA, regresi, metrik | 4 tingkat severity |
@@ -116,7 +116,7 @@ Pengecualian publik hanya: `POST /api/login`, `GET /health`, dan aset statis Web
 **Urutan kerja harian QA:**
 
 ```
-pagi   : siapkan environment bersih → smoke TC-01..TC-13
+pagi   : siapkan environment bersih → smoke 13 TC (`10-Test-Case.md` §2)
 siang  : eksekusi TC sesuai jadwal → catat bukti
 sore   : triage defect 15 menit → perbarui RTM & laporan
 akhir  : jalankan UAT → tanda tangan → putuskan siap/tidak siap demo

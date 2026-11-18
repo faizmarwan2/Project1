@@ -260,3 +260,4 @@ Fakta yang harus ditulis apa adanya (bukan ditambal dengan asumsi):
 |---|---|---|
 | 1.0 | 2026-11-18 | Work order disimpan; menunggu prompt `build`. Aturan utama: tanpa git, sumber hanya repo + docs, semua fitur wajib login. |
 | 2.0 | 2026-11-18 | Build selesai (D1–D8). Ditambah paket SA/QA D9–D19 atas permintaan pengguna. Verifikasi Mermaid memakai parser resmi. Temuan lingkungan dicatat sebagai risiko, bukan ditambal. |
+| 2.1 | 2026-11-19 | ID test case diubah dari `TC-01` … `TC-61` menjadi per modul (`TC-AUTH-01` … `TC-WEB-02`), bahasa langkah/hasil disederhanakan, dan rujukan bukti suite memakai bentuk `hasil-*.json#NAMA`. Berkas xlsx diregenerasi (64 blok, 7 halaman cetak) dan seluruh dokumen QA diselaraskan. |

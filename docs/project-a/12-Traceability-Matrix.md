@@ -19,21 +19,21 @@
 
 | Modul | FR | FR punya TC | FR punya UAT | TC terkait |
 |---|---|---|---|---|
-| AUTH | 9 | 9 | 6 | TC-01, 02, 12, 14..18 |
-| EMP | 12 | 12 | 5 | TC-01, 11, 13, 19..31 |
-| ADM | 4 | 4 | 3 | TC-01, 32..34 |
-| OFF | 4 | 4 | 4 | TC-35..40 |
-| ATT | 15 | 15 | 10 | TC-03..08, 11, 29, 40..48 |
-| HIS | 9 | 9 | 4 | TC-09, 10, 49..57 |
-| DSH | 5 | 5 | 4 | TC-10, 58, 59 |
-| WEB | 5 | 5 | 3 | TC-17, 60, 61 |
+| AUTH | 9 | 9 | 6 | `TC-AUTH-01` … `TC-AUTH-09`, `TC-EMP-01`, `TC-OFF-04` |
+| EMP | 12 | 12 | 5 | `TC-EMP-01` … `TC-EMP-15`, `TC-AUTH-04` |
+| ADM | 4 | 4 | 3 | `TC-ADM-01` … `TC-ADM-03`, `TC-EMP-01` |
+| OFF | 4 | 4 | 4 | `TC-OFF-01` … `TC-OFF-06` |
+| ATT | 15 | 15 | 10 | `TC-ATT-01` … `TC-ATT-14`, `TC-EMP-12`, `TC-OFF-06`, `TC-AUTH-04` |
+| HIS | 9 | 9 | 4 | `TC-HIS-01` … `TC-HIS-10`, `TC-AUTH-07` |
+| DSH | 5 | 5 | 4 | `TC-DSH-01`, `TC-DSH-02`, `TC-HIS-10` |
+| WEB | 5 | 5 | 3 | `TC-WEB-01`, `TC-WEB-02`, `TC-AUTH-09` |
 | **Total** | **63** | **63 (100%)** | **39 (61,9%)** | **61 TC** |
 
 **Kesimpulan cakupan:**
 
 - **Tidak ada FR tanpa test case** — 100% requirement dapat diverifikasi.
 - **UAT tidak mencakup semua FR** — hal ini disengaja: UAT menguji alur bisnis utama (**39 FR**), sisanya diuji pada level sistem. FR yang hanya punya TC tercantum di §4.
-- **Tidak ada TC tanpa FR** — setiap test case menunjuk minimal satu kebutuhan, kecuali TC-47/48 (aturan waktu) dan TC-17/60/61 (perilaku antarmuka) yang menunjuk NFR.
+- **Tidak ada TC tanpa FR** — setiap test case menunjuk minimal satu kebutuhan, kecuali `TC-ATT-13` (aturan waktu) dan `TC-AUTH-09`, `TC-WEB-01`, `TC-WEB-02` (perilaku antarmuka) yang menunjuk NFR.
 
 ---
 
@@ -43,104 +43,104 @@
 
 | FR | Pri | UC | Test Case | UAT | Status |
 |---|---|---|---|---|---|
-| FR-AUTH-00 | M | UC-01 | TC-02, TC-16 | UAT-01 | Terverifikasi |
-| FR-AUTH-01 | M | UC-01 | TC-01, TC-14 | UAT-02 | Terverifikasi |
-| FR-AUTH-02 | M | UC-01 | TC-12, TC-14 | — | Terverifikasi |
-| FR-AUTH-03 | M | UC-01 | TC-11 | — | Terverifikasi |
-| FR-AUTH-04 | M | UC-01 | TC-02, TC-15 | UAT-10 | Terverifikasi |
-| FR-AUTH-05 | M | UC-01, UC-02 | TC-09, TC-16, TC-38 | UAT-12 | Terverifikasi |
-| FR-AUTH-06 | M | UC-02 | TC-01, TC-18 | — | Terverifikasi |
-| FR-AUTH-07 | M | UC-01 | TC-01, TC-15 | UAT-02 | Terverifikasi |
-| FR-AUTH-08 | M | UC-01 | TC-15, TC-17 | UAT-10, UAT-11 | Terverifikasi |
+| FR-AUTH-00 | M | UC-01 | TC-AUTH-01, TC-AUTH-06 | UAT-01 | Terverifikasi |
+| FR-AUTH-01 | M | UC-01 | TC-EMP-01, TC-AUTH-02 | UAT-02 | Terverifikasi |
+| FR-AUTH-02 | M | UC-01 | TC-AUTH-03, TC-AUTH-02 | — | Terverifikasi |
+| FR-AUTH-03 | M | UC-01 | TC-AUTH-04 | — | Terverifikasi |
+| FR-AUTH-04 | M | UC-01 | TC-AUTH-01, TC-AUTH-05 | UAT-10 | Terverifikasi |
+| FR-AUTH-05 | M | UC-01, UC-02 | TC-AUTH-07, TC-AUTH-06, TC-OFF-04 | UAT-12 | Terverifikasi |
+| FR-AUTH-06 | M | UC-02 | TC-EMP-01, TC-AUTH-08 | — | Terverifikasi |
+| FR-AUTH-07 | M | UC-01 | TC-EMP-01, TC-AUTH-05 | UAT-02 | Terverifikasi |
+| FR-AUTH-08 | M | UC-01 | TC-AUTH-05, TC-AUTH-09 | UAT-10, UAT-11 | Terverifikasi |
 
 ### 2.2 EMP — Manajemen Karyawan
 
 | FR | Pri | UC | Test Case | UAT | Status |
 |---|---|---|---|---|---|
-| FR-EMP-01 | M | UC-03 | TC-19, TC-25 | UAT-02 | Terverifikasi |
-| FR-EMP-02 | S | UC-03 | TC-19, TC-20 | UAT-02 | Terverifikasi |
-| FR-EMP-03 | M | UC-03 | TC-01, TC-19 | UAT-02 | Terverifikasi |
-| FR-EMP-04 | S | UC-03 | TC-23, TC-24, TC-28 | — | Terverifikasi |
-| FR-EMP-05 | M | UC-03 | TC-21, TC-22 | — | Terverifikasi |
-| FR-EMP-06 | M | UC-04 | TC-26 | UAT-02 | Terverifikasi |
-| FR-EMP-07 | M | UC-04 | TC-13, TC-27 | — | Terverifikasi |
-| FR-EMP-08 | M | UC-05 | TC-28 | — | Terverifikasi |
-| FR-EMP-09 | M | UC-05 | TC-11, TC-29 | — | Terverifikasi |
-| FR-EMP-10 | S | UC-06 | TC-13, TC-31 | — | Terverifikasi |
-| FR-EMP-11 | S | UC-07 | TC-30 | — | Terverifikasi |
-| FR-EMP-12 | M | UC-03 | TC-01, TC-19 | UAT-02 | Terverifikasi |
+| FR-EMP-01 | M | UC-03 | TC-EMP-02, TC-EMP-08 | UAT-02 | Terverifikasi |
+| FR-EMP-02 | S | UC-03 | TC-EMP-02, TC-EMP-03 | UAT-02 | Terverifikasi |
+| FR-EMP-03 | M | UC-03 | TC-EMP-01, TC-EMP-02 | UAT-02 | Terverifikasi |
+| FR-EMP-04 | S | UC-03 | TC-EMP-06, TC-EMP-07, TC-EMP-11 | — | Terverifikasi |
+| FR-EMP-05 | M | UC-03 | TC-EMP-04, TC-EMP-05 | — | Terverifikasi |
+| FR-EMP-06 | M | UC-04 | TC-EMP-09 | UAT-02 | Terverifikasi |
+| FR-EMP-07 | M | UC-04 | TC-EMP-14, TC-EMP-10 | — | Terverifikasi |
+| FR-EMP-08 | M | UC-05 | TC-EMP-11 | — | Terverifikasi |
+| FR-EMP-09 | M | UC-05 | TC-AUTH-04, TC-EMP-12 | — | Terverifikasi |
+| FR-EMP-10 | S | UC-06 | TC-EMP-14, TC-EMP-15 | — | Terverifikasi |
+| FR-EMP-11 | S | UC-07 | TC-EMP-13 | — | Terverifikasi |
+| FR-EMP-12 | M | UC-03 | TC-EMP-01, TC-EMP-02 | UAT-02 | Terverifikasi |
 
 ### 2.3 ADM — Akun HR
 
 | FR | Pri | UC | Test Case | UAT | Status |
 |---|---|---|---|---|---|
-| FR-ADM-01 | S | UC-08 | TC-34 | UAT-14 | Terverifikasi |
-| FR-ADM-02 | S | UC-08 | TC-01, TC-32 | UAT-14 | Terverifikasi |
-| FR-ADM-03 | M | UC-08 | TC-01, TC-33 | — | Terverifikasi |
-| FR-ADM-04 | M | UC-08 | TC-01, TC-32 | UAT-14 | Terverifikasi |
+| FR-ADM-01 | S | UC-08 | TC-ADM-03 | UAT-14 | Terverifikasi |
+| FR-ADM-02 | S | UC-08 | TC-EMP-01, TC-ADM-01 | UAT-14 | Terverifikasi |
+| FR-ADM-03 | M | UC-08 | TC-EMP-01, TC-ADM-02 | — | Terverifikasi |
+| FR-ADM-04 | M | UC-08 | TC-EMP-01, TC-ADM-01 | UAT-14 | Terverifikasi |
 
 ### 2.4 OFF — Office & Radius
 
 | FR | Pri | UC | Test Case | UAT | Status |
 |---|---|---|---|---|---|
-| FR-OFF-01 | M | UC-09 | TC-38 | UAT-13 | Terverifikasi |
-| FR-OFF-02 | M | UC-09 | TC-35, TC-36, TC-37 | UAT-13 | Terverifikasi |
-| FR-OFF-03 | M | UC-09 | TC-38, TC-39 | UAT-13 | Terverifikasi |
-| FR-OFF-04 | M | UC-09 | TC-35 | UAT-03 | Terverifikasi |
+| FR-OFF-01 | M | UC-09 | TC-OFF-04 | UAT-13 | Terverifikasi |
+| FR-OFF-02 | M | UC-09 | TC-OFF-01, TC-OFF-02, TC-OFF-03 | UAT-13 | Terverifikasi |
+| FR-OFF-03 | M | UC-09 | TC-OFF-04, TC-OFF-05 | UAT-13 | Terverifikasi |
+| FR-OFF-04 | M | UC-09 | TC-OFF-01 | UAT-03 | Terverifikasi |
 
 ### 2.5 ATT — Absensi
 
 | FR | Pri | UC | Test Case | UAT | Status |
 |---|---|---|---|---|---|
-| FR-ATT-01 | M | UC-10 | TC-41, TC-42 | UAT-03 | Terverifikasi |
-| FR-ATT-02 | M | UC-11 | TC-04 | UAT-03 | Terverifikasi |
-| FR-ATT-03 | M | UC-11 | TC-05 | UAT-04 | Terverifikasi |
-| FR-ATT-04 | M | UC-12 | TC-03 | — | Terverifikasi |
-| FR-ATT-05 | M | UC-12 | TC-06 | UAT-05 | Terverifikasi |
-| FR-ATT-06 | M | UC-12 | TC-07 | UAT-06 | Terverifikasi |
-| FR-ATT-07 | M | UC-11 | TC-04, TC-47 | UAT-03 | Terverifikasi |
-| FR-ATT-08 | M | UC-11 | TC-08 | UAT-03 | Terverifikasi |
-| FR-ATT-09 | M | UC-11 | TC-08, TC-43 | UAT-03 | Terverifikasi |
-| FR-ATT-10 | M | UC-11 | TC-08 | UAT-09 | Terverifikasi |
-| FR-ATT-11 | M | UC-11 | TC-40 | — | Terverifikasi |
-| FR-ATT-12 | M | UC-11 | TC-11, TC-29 | — | Terverifikasi |
-| FR-ATT-13 | M | UC-11 | TC-05, TC-48 | UAT-04 | Terverifikasi |
-| FR-ATT-14 | S | UC-11 | TC-46 | — | Terverifikasi |
-| FR-ATT-15 | S | UC-11 | TC-44, TC-45 | — | Terverifikasi |
+| FR-ATT-01 | M | UC-10 | TC-ATT-07, TC-ATT-08 | UAT-03 | Terverifikasi |
+| FR-ATT-02 | M | UC-11 | TC-ATT-01 | UAT-03 | Terverifikasi |
+| FR-ATT-03 | M | UC-11 | TC-ATT-02 | UAT-04 | Terverifikasi |
+| FR-ATT-04 | M | UC-12 | TC-ATT-03 | — | Terverifikasi |
+| FR-ATT-05 | M | UC-12 | TC-ATT-04 | UAT-05 | Terverifikasi |
+| FR-ATT-06 | M | UC-12 | TC-ATT-05 | UAT-06 | Terverifikasi |
+| FR-ATT-07 | M | UC-11 | TC-ATT-01, TC-ATT-13 | UAT-03 | Terverifikasi |
+| FR-ATT-08 | M | UC-11 | TC-ATT-06 | UAT-03 | Terverifikasi |
+| FR-ATT-09 | M | UC-11 | TC-ATT-06, TC-ATT-09 | UAT-03 | Terverifikasi |
+| FR-ATT-10 | M | UC-11 | TC-ATT-06 | UAT-09 | Terverifikasi |
+| FR-ATT-11 | M | UC-11 | TC-OFF-06 | — | Terverifikasi |
+| FR-ATT-12 | M | UC-11 | TC-AUTH-04, TC-EMP-12 | — | Terverifikasi |
+| FR-ATT-13 | M | UC-11 | TC-ATT-02, TC-ATT-14 | UAT-04 | Terverifikasi |
+| FR-ATT-14 | S | UC-11 | TC-ATT-12 | — | Terverifikasi |
+| FR-ATT-15 | S | UC-11 | TC-ATT-10, TC-ATT-11 | — | Terverifikasi |
 
 ### 2.6 HIS — Riwayat & Filter
 
 | FR | Pri | UC | Test Case | UAT | Status |
 |---|---|---|---|---|---|
-| FR-HIS-01 | M | UC-13 | TC-55 | UAT-08 | Terverifikasi |
-| FR-HIS-02 | M | UC-13 | TC-09 | UAT-08 | Terverifikasi |
-| FR-HIS-03 | M | UC-14 | TC-10 | — | Terverifikasi |
-| FR-HIS-04 | M | UC-14 | TC-10, TC-49 | — | Terverifikasi |
-| FR-HIS-05 | M | UC-14 | TC-10, TC-50 | — | Terverifikasi |
-| FR-HIS-06 | M | UC-14 | TC-10, TC-51, TC-52, TC-53 | — | Terverifikasi |
-| FR-HIS-07 | S | UC-14 | TC-10, TC-54 | — | Terverifikasi |
-| FR-HIS-08 | S | UC-15 | TC-09, TC-56 | UAT-08 | Terverifikasi |
-| FR-HIS-09 | C | UC-16 | TC-57 | UAT-15 | Terverifikasi |
+| FR-HIS-01 | M | UC-13 | TC-HIS-07 | UAT-08 | Terverifikasi |
+| FR-HIS-02 | M | UC-13 | TC-AUTH-07 | UAT-08 | Terverifikasi |
+| FR-HIS-03 | M | UC-14 | TC-HIS-10 | — | Terverifikasi |
+| FR-HIS-04 | M | UC-14 | TC-HIS-10, TC-HIS-01 | — | Terverifikasi |
+| FR-HIS-05 | M | UC-14 | TC-HIS-10, TC-HIS-02 | — | Terverifikasi |
+| FR-HIS-06 | M | UC-14 | TC-HIS-10, TC-HIS-03, TC-HIS-04, TC-HIS-05 | — | Terverifikasi |
+| FR-HIS-07 | S | UC-14 | TC-HIS-10, TC-HIS-06 | — | Terverifikasi |
+| FR-HIS-08 | S | UC-15 | TC-AUTH-07, TC-HIS-08 | UAT-08 | Terverifikasi |
+| FR-HIS-09 | C | UC-16 | TC-HIS-09 | UAT-15 | Terverifikasi |
 
 ### 2.7 DSH — Dashboard
 
 | FR | Pri | UC | Test Case | UAT | Status |
 |---|---|---|---|---|---|
-| FR-DSH-01 | M | UC-17 | TC-10, TC-59 | UAT-07 | Terverifikasi |
-| FR-DSH-02 | M | UC-17 | TC-10, TC-59 | UAT-07 | Terverifikasi |
-| FR-DSH-03 | S | UC-17 | TC-10, TC-59 | UAT-07 | Terverifikasi |
-| FR-DSH-04 | M | UC-17 | TC-58 | — | Terverifikasi |
-| FR-DSH-05 | M | UC-17 | TC-10, TC-59 | UAT-07 | Terverifikasi |
+| FR-DSH-01 | M | UC-17 | TC-HIS-10, TC-DSH-02 | UAT-07 | Terverifikasi |
+| FR-DSH-02 | M | UC-17 | TC-HIS-10, TC-DSH-02 | UAT-07 | Terverifikasi |
+| FR-DSH-03 | S | UC-17 | TC-HIS-10, TC-DSH-02 | UAT-07 | Terverifikasi |
+| FR-DSH-04 | M | UC-17 | TC-DSH-01 | — | Terverifikasi |
+| FR-DSH-05 | M | UC-17 | TC-HIS-10, TC-DSH-02 | UAT-07 | Terverifikasi |
 
 ### 2.8 WEB — Antarmuka HR
 
 | FR | Pri | UC | Test Case | UAT | Status |
 |---|---|---|---|---|---|
-| FR-WEB-01 | M | UC-01 | TC-60 | UAT-01 | Terverifikasi |
-| FR-WEB-02 | M | UC-01 | TC-60 | — | Terverifikasi |
-| FR-WEB-03 | S | UC-03 | TC-61 | UAT-02 | Terverifikasi |
-| FR-WEB-04 | C | UC-01 | TC-61 | — | Terverifikasi |
-| FR-WEB-05 | M | UC-01 | TC-17 | UAT-12 | Terverifikasi |
+| FR-WEB-01 | M | UC-01 | TC-WEB-01 | UAT-01 | Terverifikasi |
+| FR-WEB-02 | M | UC-01 | TC-WEB-01 | — | Terverifikasi |
+| FR-WEB-03 | S | UC-03 | TC-WEB-02 | UAT-02 | Terverifikasi |
+| FR-WEB-04 | C | UC-01 | TC-WEB-02 | — | Terverifikasi |
+| FR-WEB-05 | M | UC-01 | TC-AUTH-09 | UAT-12 | Terverifikasi |
 
 ---
 
@@ -148,23 +148,23 @@
 
 | UC | Nama | Test Case | UAT |
 |---|---|---|---|
-| UC-01 | Login & Sesi | TC-01, TC-14, TC-15, TC-17 | UAT-01, UAT-10, UAT-12 |
-| UC-02 | Lihat Profil | TC-18 | — |
-| UC-03 | Tambah Karyawan | TC-01, TC-19..TC-25 | UAT-02 |
-| UC-04 | Lihat Daftar Karyawan | TC-26, TC-27 | UAT-02 |
-| UC-05 | Ubah Karyawan | TC-28, TC-29 | — |
-| UC-06 | Hapus Karyawan | TC-13, TC-31 | — |
-| UC-07 | Reset Password | TC-30 | — |
-| UC-08 | Kelola Akun HR | TC-32, TC-33, TC-34 | UAT-14 |
-| UC-09 | Kelola Office | TC-35..TC-39 | UAT-13 |
-| UC-10 | Status Hari Ini | TC-41, TC-42 | UAT-03 |
-| UC-11 | Check-in | TC-04, TC-05, TC-08, TC-40, TC-43..TC-47 | UAT-03, UAT-04, UAT-09 |
-| UC-12 | Check-out | TC-03, TC-06, TC-07 | UAT-05, UAT-06 |
-| UC-13 | Riwayat Pribadi | TC-09, TC-55 | UAT-08 |
-| UC-14 | Daftar & Filter Absensi | TC-10, TC-49..TC-54 | UAT-07 |
-| UC-15 | Lihat Foto Bukti | TC-09, TC-56 | UAT-08 |
-| UC-16 | Ekspor CSV | TC-57 | UAT-15 |
-| UC-17 | Dashboard | TC-10, TC-58, TC-59 | UAT-07 |
+| UC-01 | Login & Sesi | TC-EMP-01, TC-AUTH-02, TC-AUTH-05, TC-AUTH-09 | UAT-01, UAT-10, UAT-12 |
+| UC-02 | Lihat Profil | TC-AUTH-08 | — |
+| UC-03 | Tambah Karyawan | TC-EMP-01, `TC-EMP-02` … `TC-EMP-08` | UAT-02 |
+| UC-04 | Lihat Daftar Karyawan | TC-EMP-09, TC-EMP-10 | UAT-02 |
+| UC-05 | Ubah Karyawan | TC-EMP-11, TC-EMP-12 | — |
+| UC-06 | Hapus Karyawan | TC-EMP-14, TC-EMP-15 | — |
+| UC-07 | Reset Password | TC-EMP-13 | — |
+| UC-08 | Kelola Akun HR | TC-ADM-01, TC-ADM-02, TC-ADM-03 | UAT-14 |
+| UC-09 | Kelola Office | `TC-OFF-01` … `TC-OFF-05` | UAT-13 |
+| UC-10 | Status Hari Ini | TC-ATT-07, TC-ATT-08 | UAT-03 |
+| UC-11 | Check-in | TC-ATT-01, TC-ATT-02, TC-ATT-06, TC-OFF-06, `TC-ATT-09` … `TC-ATT-13` | UAT-03, UAT-04, UAT-09 |
+| UC-12 | Check-out | TC-ATT-03, TC-ATT-04, TC-ATT-05 | UAT-05, UAT-06 |
+| UC-13 | Riwayat Pribadi | TC-AUTH-07, TC-HIS-07 | UAT-08 |
+| UC-14 | Daftar & Filter Absensi | TC-HIS-10, `TC-HIS-01` … `TC-HIS-06` | UAT-07 |
+| UC-15 | Lihat Foto Bukti | TC-AUTH-07, TC-HIS-08 | UAT-08 |
+| UC-16 | Ekspor CSV | TC-HIS-09 | UAT-15 |
+| UC-17 | Dashboard | TC-HIS-10, TC-DSH-01, TC-DSH-02 | UAT-07 |
 
 **Cakupan UC:** 17/17 memiliki minimal satu test case.
 
@@ -174,16 +174,16 @@
 
 | FR | Alasan tidak masuk UAT | TC |
 |---|---|---|
-| FR-AUTH-02 | Kasus negatif login tidak perlu didemokan ke pengguna | TC-12, TC-14 |
-| FR-AUTH-03 | Sensitif; cukup diuji sistem (nonaktifkan akun) | TC-11 |
-| FR-AUTH-06 | Profil hanya informasi pendukung | TC-18 |
-| FR-EMP-04, 05 | Validasi input & duplikasi bersifat teknis | TC-21..TC-24, TC-28 |
-| FR-EMP-07, 08, 09, 10, 11 | Operasional HR, bukan alur demo utama | TC-13, TC-27..TC-31 |
-| FR-ADM-03 | Kasus negatif duplikasi email | TC-33 |
-| FR-ATT-04, 11, 14, 15 | Kondisi tepi (OUT tanpa IN, tanpa office, foto yatim, berkas besar) | TC-03, TC-40, TC-44..TC-46 |
-| FR-HIS-05, 06, 07 | Validasi filter & paginasi | TC-50..TC-54 |
-| FR-DSH-04 | Validasi format tanggal | TC-58 |
-| FR-WEB-02, 04 | Perilaku antarmuka pendukung | TC-60, TC-61 |
+| FR-AUTH-02 | Kasus negatif login tidak perlu didemokan ke pengguna | TC-AUTH-03, TC-AUTH-02 |
+| FR-AUTH-03 | Sensitif; cukup diuji sistem (nonaktifkan akun) | TC-AUTH-04 |
+| FR-AUTH-06 | Profil hanya informasi pendukung | TC-AUTH-08 |
+| FR-EMP-04, 05 | Validasi input & duplikasi bersifat teknis | `TC-EMP-04` … `TC-EMP-07`, TC-EMP-11 |
+| FR-EMP-07, 08, 09, 10, 11 | Operasional HR, bukan alur demo utama | TC-EMP-14, `TC-EMP-10` … `TC-EMP-15` |
+| FR-ADM-03 | Kasus negatif duplikasi email | TC-ADM-02 |
+| FR-ATT-04, 11, 14, 15 | Kondisi tepi (OUT tanpa IN, tanpa office, foto yatim, berkas besar) | TC-ATT-03, TC-OFF-06, `TC-ATT-10` … `TC-ATT-12` |
+| FR-HIS-05, 06, 07 | Validasi filter & paginasi | `TC-HIS-02` … `TC-HIS-06` |
+| FR-DSH-04 | Validasi format tanggal | TC-DSH-01 |
+| FR-WEB-02, 04 | Perilaku antarmuka pendukung | TC-WEB-01, TC-WEB-02 |
 
 **Catatan:** daftar ini bukan celah berbahaya, melainkan pembagian level pengujian. Bila mentor ingin UAT menutup semua FR, tambahkan skenario pada `11-UAT.md` — jangan menghapus TC.
 
@@ -193,22 +193,22 @@
 
 | NFR | Bukti | Cara verifikasi |
 |---|---|---|
-| NFR-01, 02 | TC-04, TC-06 (catat durasi), TC-10 | Ukur waktu respons saat eksekusi |
-| NFR-03 | TC-05 | Kirim dua IN bersamaan; satu 201, satu 409 |
-| NFR-04 | TC-01, TC-19 | Periksa DB: `password_hash` berawalan `$2`; tidak ada plaintext |
-| NFR-05 | TC-02, TC-16, TC-17 | Seluruh endpoint terproteksi |
-| NFR-06 | TC-09, TC-56 | 403 untuk pihak lain |
+| NFR-01, 02 | TC-ATT-01, TC-ATT-04 (catat durasi), TC-HIS-10 | Ukur waktu respons saat eksekusi |
+| NFR-03 | TC-ATT-02 | Kirim dua IN bersamaan; satu 201, satu 409 |
+| NFR-04 | TC-EMP-01, TC-EMP-02 | Periksa DB: `password_hash` berawalan `$2`; tidak ada plaintext |
+| NFR-05 | TC-AUTH-01, TC-AUTH-06, TC-AUTH-09 | Seluruh endpoint terproteksi |
+| NFR-06 | TC-AUTH-07, TC-HIS-08 | 403 untuk pihak lain |
 | NFR-07 | Tinjauan berkas | `.env` tidak ikut ter-commit |
-| NFR-08 | TC-17, TC-61 | Tidak ada status sukses saat gagal |
-| NFR-09 | TC-05, TC-48 | Unique constraint |
-| NFR-10 | TC-60 | Loading, error, empty state ada |
-| NFR-11 | TC-60 | Alur inti ≤ 3 klik (manual) |
+| NFR-08 | TC-AUTH-09, TC-WEB-02 | Tidak ada status sukses saat gagal |
+| NFR-09 | TC-ATT-02, TC-ATT-14 | Unique constraint |
+| NFR-10 | TC-WEB-01 | Loading, error, empty state ada |
+| NFR-11 | TC-WEB-01 | Alur inti ≤ 3 klik (manual) |
 | NFR-12 | Tinjauan struktur | `routes/`, `middleware/`, `utils/` terpisah |
 | NFR-13 | Eksekusi `npm install && npm start` | Berhasil di Node 22.13+ |
-| NFR-14 | TC-61 (error 500) | Log server mencatat |
+| NFR-14 | TC-WEB-02 (error 500) | Log server mencatat |
 | NFR-15 | `npm test` | Dijalankan dan hasilnya dicatat |
-| NFR-16 | TC-17, TC-60 | Pesan berbahasa Indonesia |
-| NFR-17 | TC-47 | Batas waktu konsisten dengan `Asia/Jakarta` |
+| NFR-16 | TC-AUTH-09, TC-WEB-01 | Pesan berbahasa Indonesia |
+| NFR-17 | TC-ATT-13 | Batas waktu konsisten dengan `Asia/Jakarta` |
 
 ---
 
@@ -233,7 +233,7 @@ grep -o 'FR-[A-Z]*-[0-9][0-9]' docs/project-a/01-SRS.md | sort -u | wc -l
 grep -o 'FR-[A-Z]*-[0-9][0-9]' docs/project-a/06-Functional-Requirement.md | sort -u | wc -l
 
 # 3. Hitung test case (harus 61)
-grep -o 'TC-[0-9][0-9]' docs/project-a/10-Test-Case.md | sort -u | wc -l
+grep -o 'TC-[A-Z]*-[0-9][0-9]' docs/project-a/10-Test-Case.md | sort -u | wc -l
 
 # 4. Hitung UAT (harus 15)
 grep -o 'UAT-[0-9][0-9]' docs/project-a/11-UAT.md | sort -u | wc -l

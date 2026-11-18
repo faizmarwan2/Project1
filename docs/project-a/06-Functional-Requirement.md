@@ -18,15 +18,15 @@
 
 | ID | Requirement | Pri | Status | Bukti | Tes |
 |---|---|---|---|---|---|
-| **FR-AUTH-00** | **Sistem menolak seluruh akses fitur sebelum login.** Semua endpoint `/api/**` selain `POST /api/login` memerlukan bearer token valid; tanpa token → `401 UNAUTHORIZED`; role salah → `403 FORBIDDEN`. | M | I | `middleware/auth.js:7-22`, `app.js:13-18` | TC-02 |
-| FR-AUTH-01 | Login `email` + `password` mengembalikan `token`, `role`, `user`. | M | I | `routes/auth.js:10-21` | TC-01 |
-| FR-AUTH-02 | Kredensial salah → `401 INVALID_CREDENTIALS`. | M | I | `routes/auth.js:15-16` | TC-12 |
-| FR-AUTH-03 | Karyawan `INACTIVE` tidak dapat login → `403 ACCOUNT_INACTIVE`. | M | I | `routes/auth.js:17-18` | TC-11 |
-| FR-AUTH-04 | Token divalidasi setiap request; hilang/tidak valid/kedaluwarsa → `401 UNAUTHORIZED`. | M | I | `middleware/auth.js:7-19` | TC-02 |
-| FR-AUTH-05 | Otorisasi per peran pada setiap endpoint. | M | I | `requireRole`, tiap route | TC-09 |
-| FR-AUTH-06 | `GET /api/me` mengembalikan profil + data karyawan terkait. | M | I | `routes/auth.js:24-29` | TC-01 |
-| FR-AUTH-07 | Token ditandatangani secret server; masa berlaku default `12h`. | M | I | `config.js:13-14`, `auth.js:19` | — |
-| FR-AUTH-08 | Klien menghapus token dan kembali ke Login saat menerima 401. | M | I | `public/app.js:24,56-60` | manual |
+| **FR-AUTH-00** | **Sistem menolak seluruh akses fitur sebelum login.** Semua endpoint `/api/**` selain `POST /api/login` memerlukan bearer token valid; tanpa token → `401 UNAUTHORIZED`; role salah → `403 FORBIDDEN`. | M | I | `middleware/auth.js:7-22`, `app.js:13-18` | TC-AUTH-01 |
+| FR-AUTH-01 | Login `email` + `password` mengembalikan `token`, `role`, `user`. | M | I | `routes/auth.js:10-21` | TC-AUTH-02, TC-EMP-01 |
+| FR-AUTH-02 | Kredensial salah → `401 INVALID_CREDENTIALS`. | M | I | `routes/auth.js:15-16` | TC-AUTH-02, TC-AUTH-03 |
+| FR-AUTH-03 | Karyawan `INACTIVE` tidak dapat login → `403 ACCOUNT_INACTIVE`. | M | I | `routes/auth.js:17-18` | TC-AUTH-04 |
+| FR-AUTH-04 | Token divalidasi setiap request; hilang/tidak valid/kedaluwarsa → `401 UNAUTHORIZED`. | M | I | `middleware/auth.js:7-19` | TC-AUTH-01, TC-AUTH-05 |
+| FR-AUTH-05 | Otorisasi per peran pada setiap endpoint. | M | I | `requireRole`, tiap route | TC-AUTH-06, TC-AUTH-07, TC-OFF-04 |
+| FR-AUTH-06 | `GET /api/me` mengembalikan profil + data karyawan terkait. | M | I | `routes/auth.js:24-29` | TC-AUTH-08, TC-EMP-01 |
+| FR-AUTH-07 | Token ditandatangani secret server; masa berlaku default `12h`. | M | I | `config.js:13-14`, `auth.js:19` | TC-AUTH-05, TC-EMP-01 |
+| FR-AUTH-08 | Klien menghapus token dan kembali ke Login saat menerima 401. | M | I | `public/app.js:24,56-60` | TC-AUTH-05, TC-AUTH-09 |
 
 **Acceptance criteria**
 
@@ -54,18 +54,18 @@ Scenario: Web HR menampilkan hanya layar Login
 
 | ID | Requirement | Pri | Status | Bukti | Tes |
 |---|---|---|---|---|---|
-| FR-EMP-01 | Tambah karyawan cukup dengan `name`; kode otomatis `kyNN`. | M | I | `employees.js:25-29,54-75` | TC-03 |
-| FR-EMP-02 | Email otomatis `nama.depan@ethes.tech`; bentrok diberi sufiks angka. | S | I | `employees.js:17-24` | TC-03 |
-| FR-EMP-03 | Akun login dibuat bersamaan; password acak 12 karakter ditampilkan **sekali**. | M | I | `employees.js:14,61,73` | TC-03 |
-| FR-EMP-04 | `employee_code`, `email`, `password` boleh diisi manual; password ≥ 8 karakter. | S | I | `employees.js:57-61` | — |
-| FR-EMP-05 | Kode duplikat → `409 DUPLICATE_CODE`; email duplikat → `409 DUPLICATE_EMAIL`. | M | I | `employees.js:63-64` | — |
-| FR-EMP-06 | Daftar karyawan dengan `search`, `status`, `page`, `limit` (maks 200). | M | I | `employees.js:34-45` | TC-03 |
-| FR-EMP-07 | Detail karyawan per ID; tidak ada → `404 NOT_FOUND`. | M | I | `employees.js:47-51` | TC-13 |
-| FR-EMP-08 | Ubah `name`, `employee_code`, `status`, `email`, `password`. | M | I | `employees.js:78-101` | TC-11 |
-| FR-EMP-09 | Nonaktifkan karyawan → login dan absensi ditolak. | M | I | `employees.js:78-101`, `auth.js:17` | TC-11 |
-| FR-EMP-10 | Hapus karyawan → akun, riwayat, dan berkas foto ikut terhapus. | S | I | `employees.js:103-122` | TC-13 |
-| FR-EMP-11 | Reset password → password acak baru, ditampilkan sekali. | S | I | `employees.js:124-131` | — |
-| FR-EMP-12 | Pembuatan karyawan + akun dalam satu transaksi. | M | I | `employees.js:66-75` | TC-03 |
+| FR-EMP-01 | Tambah karyawan cukup dengan `name`; kode otomatis `kyNN`. | M | I | `employees.js:25-29,54-75` | TC-EMP-02, TC-EMP-08 |
+| FR-EMP-02 | Email otomatis `nama.depan@ethes.tech`; bentrok diberi sufiks angka. | S | I | `employees.js:17-24` | TC-EMP-02, TC-EMP-03 |
+| FR-EMP-03 | Akun login dibuat bersamaan; password acak 12 karakter ditampilkan **sekali**. | M | I | `employees.js:14,61,73` | TC-EMP-01, TC-EMP-02 |
+| FR-EMP-04 | `employee_code`, `email`, `password` boleh diisi manual; password ≥ 8 karakter. | S | I | `employees.js:57-61` | TC-EMP-06, TC-EMP-07, TC-EMP-11 |
+| FR-EMP-05 | Kode duplikat → `409 DUPLICATE_CODE`; email duplikat → `409 DUPLICATE_EMAIL`. | M | I | `employees.js:63-64` | TC-EMP-04, TC-EMP-05 |
+| FR-EMP-06 | Daftar karyawan dengan `search`, `status`, `page`, `limit` (maks 200). | M | I | `employees.js:34-45` | TC-EMP-09 |
+| FR-EMP-07 | Detail karyawan per ID; tidak ada → `404 NOT_FOUND`. | M | I | `employees.js:47-51` | TC-EMP-10, TC-EMP-14 |
+| FR-EMP-08 | Ubah `name`, `employee_code`, `status`, `email`, `password`. | M | I | `employees.js:78-101` | TC-EMP-11 |
+| FR-EMP-09 | Nonaktifkan karyawan → login dan absensi ditolak. | M | I | `employees.js:78-101`, `auth.js:17` | TC-AUTH-04, TC-EMP-12 |
+| FR-EMP-10 | Hapus karyawan → akun, riwayat, dan berkas foto ikut terhapus. | S | I | `employees.js:103-122` | TC-EMP-14, TC-EMP-15 |
+| FR-EMP-11 | Reset password → password acak baru, ditampilkan sekali. | S | I | `employees.js:124-131` | TC-EMP-13 |
+| FR-EMP-12 | Pembuatan karyawan + akun dalam satu transaksi. | M | I | `employees.js:66-75` | TC-EMP-01, TC-EMP-02 |
 
 **Acceptance criteria**
 
@@ -94,10 +94,10 @@ Scenario: Karyawan dinonaktifkan
 
 | ID | Requirement | Pri | Status | Bukti | Tes |
 |---|---|---|---|---|---|
-| FR-ADM-01 | Daftar akun HR dengan `search` + paginasi. | S | I | `admins.js:21-30` | TC-03 |
-| FR-ADM-02 | Tambah akun HR; `account_code` otomatis `HRNN`. | S | I | `admins.js:32-51`, `utils/hr-code.js` | TC-03 |
-| FR-ADM-03 | Email akun HR duplikat → `409 DUPLICATE_EMAIL`. | M | I | `admins.js:44` | TC-03 |
-| FR-ADM-04 | Akun HR baru langsung dapat login dan mengakses fitur HR. | M | I | `admins.js:41-51` | TC-03 |
+| FR-ADM-01 | Daftar akun HR dengan `search` + paginasi. | S | I | `admins.js:21-30` | TC-ADM-03 |
+| FR-ADM-02 | Tambah akun HR; `account_code` otomatis `HRNN`. | S | I | `admins.js:32-51`, `utils/hr-code.js` | TC-EMP-01, TC-ADM-01 |
+| FR-ADM-03 | Email akun HR duplikat → `409 DUPLICATE_EMAIL`. | M | I | `admins.js:44` | TC-EMP-01, TC-ADM-02 |
+| FR-ADM-04 | Akun HR baru langsung dapat login dan mengakses fitur HR. | M | I | `admins.js:41-51` | TC-EMP-01, TC-ADM-01 |
 
 **Acceptance criteria**
 
@@ -120,10 +120,10 @@ Scenario: Nomor HR tidak berulang
 
 | ID | Requirement | Pri | Status | Bukti | Tes |
 |---|---|---|---|---|---|
-| FR-OFF-01 | Semua pengguna login dapat melihat office aktif. | M | I | `offices.js:10-12` | TC-10 |
-| FR-OFF-02 | HR menambah office; `name` wajib, koordinat valid, radius 10–5000 m. | M | I | `offices.js:14-32` | — |
-| FR-OFF-03 | HR mengubah office, termasuk `is_active`. | M | I | `offices.js:34-41` | — |
-| FR-OFF-04 | Seed awal menyediakan satu office aktif. | M | I | `seed.js:12-17` | TC-10 |
+| FR-OFF-01 | Semua pengguna login dapat melihat office aktif. | M | I | `offices.js:10-12` | TC-OFF-04 |
+| FR-OFF-02 | HR menambah office; `name` wajib, koordinat valid, radius 10–5000 m. | M | I | `offices.js:14-32` | TC-OFF-01, TC-OFF-02, TC-OFF-03 |
+| FR-OFF-03 | HR mengubah office, termasuk `is_active`. | M | I | `offices.js:34-41` | TC-OFF-04, TC-OFF-05 |
+| FR-OFF-04 | Seed awal menyediakan satu office aktif. | M | I | `seed.js:12-17` | TC-OFF-01 |
 
 **Acceptance criteria**
 
@@ -145,21 +145,21 @@ Scenario: Employee tidak boleh mengubah office
 
 | ID | Requirement | Pri | Status | Bukti | Tes |
 |---|---|---|---|---|---|
-| FR-ATT-01 | `GET /api/attendance/today` mengembalikan `state`, `can_check_in`, `can_check_out`, aturan jam, daftar office. | M | I | `attendance.js:61-72` | TC-09 |
-| FR-ATT-02 | IN pertama tersimpan: `check_in_at`, status, office, koordinat, jarak, foto. | M | I | `attendance.js:75-90` | TC-04 |
-| FR-ATT-03 | IN kedua → `409 ALREADY_CHECKED_IN` tanpa duplikasi. | M | I | `attendance.js:78-79,87` | TC-05 |
-| FR-ATT-04 | OUT tanpa IN → `409 NOT_CHECKED_IN`. | M | I | `attendance.js:95-96` | TC-03 |
-| FR-ATT-05 | OUT setelah IN dan belum OUT berhasil (`check_out_at` terisi). | M | I | `attendance.js:98-103` | TC-06 |
-| FR-ATT-06 | OUT kedua → `409 ALREADY_CHECKED_OUT`. | M | I | `attendance.js:97,101` | TC-07 |
-| FR-ATT-07 | `TEPAT_WAKTU` bila ≤ 08:15, `TERLAMBAT` bila > 08:15, memakai jam server. | M | I | `utils/time.js:15-20` | TC-04 |
-| FR-ATT-08 | Foto wajib → `400 PHOTO_REQUIRED`. | M | I | `attendance.js:33` | TC-08 |
-| FR-ATT-09 | Koordinat wajib & valid → `400 GPS_REQUIRED`. | M | I | `attendance.js:34-35` | TC-08 |
-| FR-ATT-10 | Di luar radius → `403 OUTSIDE_RADIUS` + `office`, `distance_m`, `radius_m`. | M | I | `attendance.js:36-42` | TC-08 |
-| FR-ATT-11 | Tidak ada office aktif → `409 NO_OFFICE`. | M | I | `attendance.js:36-37` | — |
-| FR-ATT-12 | Karyawan `INACTIVE` ditolak → `403 ACCOUNT_INACTIVE`. | M | I | `attendance.js:54-58` | TC-11 |
-| FR-ATT-13 | Keunikan `(employee_id, work_date)` di level database. | M | I | `db.js:47` | TC-05 |
-| FR-ATT-14 | Foto yang terunggah dihapus bila request ditolak. | S | I | `attendance.js:16,46-52` | — |
-| FR-ATT-15 | Foto > 5 MB atau tipe tidak didukung → `400 INVALID_PHOTO`. | S | I | `upload.js:18-19`, `app.js:24` | — |
+| FR-ATT-01 | `GET /api/attendance/today` mengembalikan `state`, `can_check_in`, `can_check_out`, aturan jam, daftar office. | M | I | `attendance.js:61-72` | TC-ATT-07, TC-ATT-08 |
+| FR-ATT-02 | IN pertama tersimpan: `check_in_at`, status, office, koordinat, jarak, foto. | M | I | `attendance.js:75-90` | TC-ATT-01 |
+| FR-ATT-03 | IN kedua → `409 ALREADY_CHECKED_IN` tanpa duplikasi. | M | I | `attendance.js:78-79,87` | TC-ATT-02 |
+| FR-ATT-04 | OUT tanpa IN → `409 NOT_CHECKED_IN`. | M | I | `attendance.js:95-96` | TC-ATT-03 |
+| FR-ATT-05 | OUT setelah IN dan belum OUT berhasil (`check_out_at` terisi). | M | I | `attendance.js:98-103` | TC-ATT-04 |
+| FR-ATT-06 | OUT kedua → `409 ALREADY_CHECKED_OUT`. | M | I | `attendance.js:97,101` | TC-ATT-05 |
+| FR-ATT-07 | `TEPAT_WAKTU` bila ≤ 08:15, `TERLAMBAT` bila > 08:15, memakai jam server. | M | I | `utils/time.js:15-20` | TC-ATT-01, TC-ATT-13 |
+| FR-ATT-08 | Foto wajib → `400 PHOTO_REQUIRED`. | M | I | `attendance.js:33` | TC-ATT-06 |
+| FR-ATT-09 | Koordinat wajib & valid → `400 GPS_REQUIRED`. | M | I | `attendance.js:34-35` | TC-ATT-06, TC-ATT-09 |
+| FR-ATT-10 | Di luar radius → `403 OUTSIDE_RADIUS` + `office`, `distance_m`, `radius_m`. | M | I | `attendance.js:36-42` | TC-ATT-06 |
+| FR-ATT-11 | Tidak ada office aktif → `409 NO_OFFICE`. | M | I | `attendance.js:36-37` | TC-OFF-06 |
+| FR-ATT-12 | Karyawan `INACTIVE` ditolak → `403 ACCOUNT_INACTIVE`. | M | I | `attendance.js:54-58` | TC-AUTH-04, TC-EMP-12 |
+| FR-ATT-13 | Keunikan `(employee_id, work_date)` di level database. | M | I | `db.js:47` | TC-ATT-02, TC-ATT-14 |
+| FR-ATT-14 | Foto yang terunggah dihapus bila request ditolak. | S | I | `attendance.js:16,46-52` | TC-ATT-12 |
+| FR-ATT-15 | Foto > 5 MB atau tipe tidak didukung → `400 INVALID_PHOTO`. | S | I | `upload.js:18-19`, `app.js:24` | TC-ATT-10, TC-ATT-11 |
 
 **Acceptance criteria**
 
@@ -192,15 +192,15 @@ Scenario: Di luar radius
 
 | ID | Requirement | Pri | Status | Bukti | Tes |
 |---|---|---|---|---|---|
-| FR-HIS-01 | Employee melihat riwayat sendiri; default `this_month`. | M | I | `attendance.js:142-149` | TC-06 |
-| FR-HIS-02 | Employee meminta data karyawan lain → `403 FORBIDDEN`. | M | I | `attendance.js:144-145` | TC-09 |
-| FR-HIS-03 | HR melihat semua absensi; default `today`. | M | I | `attendance.js:152` | TC-10 |
-| FR-HIS-04 | Prioritas filter `date` > `from`+`to` > `preset` > default. | M | I | `utils/filters.js:10-23` | TC-10 |
-| FR-HIS-05 | Validasi tanggal: format, `from ≤ to`, maks 366 hari. | M | I | `utils/filters.js:19-21` | TC-10 |
-| FR-HIS-06 | Filter status: `TEPAT_WAKTU`, `TERLAMBAT`, `BELUM_OUT`, `SUDAH_OUT`, `BELUM_IN`. | M | I | `attendance.js:15,112-134` | TC-10 |
-| FR-HIS-07 | Filter `employee_id`, `search`, `sort`, paginasi (maks 200/baris). | S | I | `attendance.js:114-138` | TC-10 |
-| FR-HIS-08 | Foto IN/OUT melalui endpoint terproteksi; Employee hanya foto sendiri. | S | I | `attendance.js:155-162` | TC-09 |
-| FR-HIS-09 | Ekspor CSV sesuai filter aktif (maks 25 halaman × 200 baris). | C | I | `public/app.js:287-300` | manual |
+| FR-HIS-01 | Employee melihat riwayat sendiri; default `this_month`. | M | I | `attendance.js:142-149` | TC-HIS-07 |
+| FR-HIS-02 | Employee meminta data karyawan lain → `403 FORBIDDEN`. | M | I | `attendance.js:144-145` | TC-AUTH-07 |
+| FR-HIS-03 | HR melihat semua absensi; default `today`. | M | I | `attendance.js:152` | TC-HIS-10 |
+| FR-HIS-04 | Prioritas filter `date` > `from`+`to` > `preset` > default. | M | I | `utils/filters.js:10-23` | TC-HIS-01, TC-HIS-10 |
+| FR-HIS-05 | Validasi tanggal: format, `from ≤ to`, maks 366 hari. | M | I | `utils/filters.js:19-21` | TC-HIS-02, TC-HIS-10 |
+| FR-HIS-06 | Filter status: `TEPAT_WAKTU`, `TERLAMBAT`, `BELUM_OUT`, `SUDAH_OUT`, `BELUM_IN`. | M | I | `attendance.js:15,112-134` | TC-HIS-03, TC-HIS-04, TC-HIS-05, TC-HIS-10 |
+| FR-HIS-07 | Filter `employee_id`, `search`, `sort`, paginasi (maks 200/baris). | S | I | `attendance.js:114-138` | TC-HIS-06, TC-HIS-10 |
+| FR-HIS-08 | Foto IN/OUT melalui endpoint terproteksi; Employee hanya foto sendiri. | S | I | `attendance.js:155-162` | TC-AUTH-07, TC-HIS-08 |
+| FR-HIS-09 | Ekspor CSV sesuai filter aktif (maks 25 halaman × 200 baris). | C | I | `public/app.js:287-300` | TC-HIS-09 |
 
 **Acceptance criteria**
 
@@ -227,11 +227,11 @@ Scenario: Rentang terlalu panjang
 
 | ID | Requirement | Pri | Status | Bukti | Tes |
 |---|---|---|---|---|---|
-| FR-DSH-01 | Ringkasan harian: total aktif, sudah IN, tepat waktu, terlambat, belum OUT, sudah OUT, belum IN. | M | I | `dashboard.js:16-31` | TC-10 |
-| FR-DSH-02 | Daftar terlambat, belum OUT, belum IN. | M | I | `dashboard.js:32-35` | TC-10 |
-| FR-DSH-03 | Tren 7 hari (sudah IN & terlambat). | S | I | `dashboard.js:23-28` | TC-10 |
-| FR-DSH-04 | `date` wajib `YYYY-MM-DD`, selain itu `400 VALIDATION`. | M | I | `dashboard.js:15` | — |
-| FR-DSH-05 | Angka dashboard konsisten dengan daftar absensi pada tanggal yang sama. | M | I | `dashboard.js:16-20` vs `attendance.js:129-138` | TC-10 |
+| FR-DSH-01 | Ringkasan harian: total aktif, sudah IN, tepat waktu, terlambat, belum OUT, sudah OUT, belum IN. | M | I | `dashboard.js:16-31` | TC-HIS-10, TC-DSH-02 |
+| FR-DSH-02 | Daftar terlambat, belum OUT, belum IN. | M | I | `dashboard.js:32-35` | TC-HIS-10, TC-DSH-02 |
+| FR-DSH-03 | Tren 7 hari (sudah IN & terlambat). | S | I | `dashboard.js:23-28` | TC-HIS-10, TC-DSH-02 |
+| FR-DSH-04 | `date` wajib `YYYY-MM-DD`, selain itu `400 VALIDATION`. | M | I | `dashboard.js:15` | TC-DSH-01 |
+| FR-DSH-05 | Angka dashboard konsisten dengan daftar absensi pada tanggal yang sama. | M | I | `dashboard.js:16-20` vs `attendance.js:129-138` | TC-HIS-10, TC-DSH-02 |
 
 **Acceptance criteria**
 
@@ -255,11 +255,11 @@ Scenario: Format tanggal salah
 
 | ID | Requirement | Pri | Status | Bukti | Tes |
 |---|---|---|---|---|---|
-| FR-WEB-01 | Web HR disajikan sebagai berkas statis dari `public/` tanpa build. | M | I | `app.js:11`, `public/index.html` | manual |
-| FR-WEB-02 | Navigasi hash: `#/dashboard`, `#/absensi`, `#/karyawan`, `#/office`. | M | I | `public/app.js:107,144-151` | manual |
-| FR-WEB-03 | Dialog kredensial (kode, email, password) + tombol salin. | S | I | `public/app.js:445-453` | manual |
-| FR-WEB-04 | Toast sukses/error untuk setiap aksi. | C | I | `public/app.js:33-36` | manual |
-| FR-WEB-05 | Web HR hanya menerima akun `HR`; akun lain ditolak dengan pesan. | M | I | `public/app.js:100,112` | manual |
+| FR-WEB-01 | Web HR disajikan sebagai berkas statis dari `public/` tanpa build. | M | I | `app.js:11`, `public/index.html` | TC-WEB-01 |
+| FR-WEB-02 | Navigasi hash: `#/dashboard`, `#/absensi`, `#/karyawan`, `#/office`. | M | I | `public/app.js:107,144-151` | TC-WEB-01 |
+| FR-WEB-03 | Dialog kredensial (kode, email, password) + tombol salin. | S | I | `public/app.js:445-453` | TC-WEB-02 |
+| FR-WEB-04 | Toast sukses/error untuk setiap aksi. | C | I | `public/app.js:33-36` | TC-WEB-02 |
+| FR-WEB-05 | Web HR hanya menerima akun `HR`; akun lain ditolak dengan pesan. | M | I | `public/app.js:100,112` | TC-AUTH-09 |
 
 **Acceptance criteria**
 
@@ -278,41 +278,42 @@ Scenario: Login Web HR dengan akun Employee
 
 | FR | Berkas | Titik kode | Tes otomatis |
 |---|---|---|---|
-| FR-AUTH-00 | `src/middleware/auth.js` | baris 7-22 | TC-02 |
-| FR-AUTH-01/02/03 | `src/routes/auth.js` | baris 10-21 | TC-01, TC-11, TC-12 |
-| FR-AUTH-06 | `src/routes/auth.js` | baris 24-29 | TC-01 |
-| FR-EMP-01..05, 12 | `src/routes/employees.js` | baris 14-75 | TC-03 |
-| FR-EMP-08, 09 | `src/routes/employees.js` | baris 78-101 | TC-11 |
-| FR-EMP-10, 11 | `src/routes/employees.js` | baris 103-131 | TC-13 |
-| FR-ADM-01..04 | `src/routes/admins.js` | baris 21-51 | TC-03 |
-| FR-OFF-01..04 | `src/routes/offices.js` | baris 10-41 | TC-10 |
-| FR-ATT-01 | `src/routes/attendance.js` | baris 61-72 | TC-09 |
-| FR-ATT-02/03 | `src/routes/attendance.js` | baris 75-90 | TC-04, TC-05 |
-| FR-ATT-04..06 | `src/routes/attendance.js` | baris 93-103 | TC-03, TC-06, TC-07 |
-| FR-ATT-07 | `src/utils/time.js` | baris 15-20 | TC-04 |
-| FR-ATT-08..15 | `src/routes/attendance.js`, `src/middleware/upload.js` | baris 32-52 | TC-08 |
-| FR-HIS-01..08 | `src/routes/attendance.js` | baris 109-162 | TC-06, TC-09, TC-10 |
-| FR-HIS-09 | `public/app.js` | baris 287-300 | manual |
-| FR-DSH-01..05 | `src/routes/dashboard.js` | baris 13-38 | TC-10 |
-| FR-WEB-01..05 | `public/app.js` | baris 24-151 | manual |
+| FR-AUTH-00 | `src/middleware/auth.js` | baris 7-22 | TC-AUTH-01, TC-AUTH-06 |
+| FR-AUTH-01/02/03 | `src/routes/auth.js` | baris 10-21 | TC-AUTH-02, TC-AUTH-03, TC-AUTH-04, TC-EMP-01 |
+| FR-AUTH-06 | `src/routes/auth.js` | baris 24-29 | TC-AUTH-08, TC-EMP-01 |
+| FR-EMP-01..05, 12 | `src/routes/employees.js` | baris 14-75 | TC-EMP-01, TC-EMP-02, TC-EMP-03, TC-EMP-04, TC-EMP-05, TC-EMP-06, TC-EMP-07, TC-EMP-08, TC-EMP-11 |
+| FR-EMP-08, 09 | `src/routes/employees.js` | baris 78-101 | TC-AUTH-04, TC-EMP-11, TC-EMP-12 |
+| FR-EMP-10, 11 | `src/routes/employees.js` | baris 103-131 | TC-EMP-13, TC-EMP-14, TC-EMP-15 |
+| FR-ADM-01..04 | `src/routes/admins.js` | baris 21-51 | TC-EMP-01, TC-ADM-01, TC-ADM-02, TC-ADM-03 |
+| FR-OFF-01..04 | `src/routes/offices.js` | baris 10-41 | TC-OFF-01, TC-OFF-02, TC-OFF-03, TC-OFF-04, TC-OFF-05 |
+| FR-ATT-01 | `src/routes/attendance.js` | baris 61-72 | TC-ATT-07, TC-ATT-08 |
+| FR-ATT-02/03 | `src/routes/attendance.js` | baris 75-90 | TC-ATT-01, TC-ATT-02 |
+| FR-ATT-04..06 | `src/routes/attendance.js` | baris 93-103 | TC-ATT-03, TC-ATT-04, TC-ATT-05 |
+| FR-ATT-07 | `src/utils/time.js` | baris 15-20 | TC-ATT-01, TC-ATT-13 |
+| FR-ATT-08..15 | `src/routes/attendance.js`, `src/middleware/upload.js` | baris 32-52 | TC-AUTH-04, TC-EMP-12, TC-OFF-06, TC-ATT-02, TC-ATT-06, TC-ATT-09, TC-ATT-10, TC-ATT-11, TC-ATT-12, TC-ATT-14 |
+| FR-HIS-01..08 | `src/routes/attendance.js` | baris 109-162 | TC-AUTH-07, TC-HIS-01, TC-HIS-02, TC-HIS-03, TC-HIS-04, TC-HIS-05, TC-HIS-06, TC-HIS-07, TC-HIS-08, TC-HIS-10 |
+| FR-HIS-09 | `public/app.js` | baris 287-300 | TC-HIS-09 |
+| FR-DSH-01..05 | `src/routes/dashboard.js` | baris 13-38 | TC-HIS-10, TC-DSH-01, TC-DSH-02 |
+| FR-WEB-01..05 | `public/app.js` | baris 24-151 | TC-AUTH-09, TC-WEB-01, TC-WEB-02 |
 
-### 9.1 Daftar Tes (mengacu `test/attendance.test.js`)
+### 9.1 Daftar Tes Unit (`test/attendance.test.js`)
 
-| ID | Nama tes | Menguji |
-|---|---|---|
-| TC-01 | HR membuat karyawan + akun | FR-AUTH-01, FR-AUTH-06, FR-EMP-01..03, FR-ADM-02 |
-| TC-02 | ATT-07 token hilang/tidak valid | FR-AUTH-00, FR-AUTH-04 |
-| TC-03 | ATT-03 OUT tanpa IN ditolak | FR-ATT-04 |
-| TC-04 | ATT-01 IN pertama berhasil | FR-ATT-02, FR-ATT-07 |
-| TC-05 | ATT-02 IN kedua ditolak tanpa duplikasi | FR-ATT-03, FR-ATT-13 |
-| TC-06 | ATT-04 OUT berhasil | FR-ATT-05, FR-HIS-01 |
-| TC-07 | ATT-05 OUT kedua ditolak | FR-ATT-06 |
-| TC-08 | GPS di luar radius & tanpa foto | FR-ATT-08, FR-ATT-09, FR-ATT-10 |
-| TC-09 | ATT-06 employee tidak boleh lihat data orang lain | FR-AUTH-05, FR-HIS-02, FR-HIS-08 |
-| TC-10 | HR filter tanggal, status, dashboard | FR-HIS-03..07, FR-DSH-01..05, FR-OFF-01 |
-| TC-11 | Karyawan nonaktif tidak bisa login | FR-AUTH-03, FR-EMP-09, FR-ATT-12 |
-| TC-12 | Password salah setelah karyawan dihapus | FR-AUTH-02 |
-| TC-13 | Hapus karyawan + riwayat + ID tidak dipakai ulang | FR-EMP-07, FR-EMP-10 |
+Sepuluh tes unit di berkas itu menjadi **smoke pack** yang sama dengan `10-Test-Case.md` §2. Nama tes ditulis apa adanya seperti di berkas agar mudah dicari.
+
+| # | Nama tes di `test/attendance.test.js` | TC fungsional | FR yang dibuktikan |
+|---|---|---|---|
+| 1 | `HR membuat karyawan + akun (email otomatis)` | TC-EMP-01 | FR-AUTH-01, FR-AUTH-06, FR-EMP-01..03, FR-EMP-12, FR-ADM-02, FR-ADM-04 |
+| 2 | `ATT-07 token hilang/tidak valid => 401` | TC-AUTH-01 | FR-AUTH-00, FR-AUTH-04 |
+| 3 | `ATT-03 OUT tanpa IN ditolak` | TC-ATT-03 | FR-ATT-04 |
+| 4 | `GPS di luar radius & tanpa foto ditolak` | TC-ATT-06 | FR-ATT-08, FR-ATT-09, FR-ATT-10 |
+| 5 | `ATT-01 IN pertama berhasil; ATT-02 IN kedua ditolak tanpa duplikasi` | TC-ATT-01, TC-ATT-02 | FR-ATT-02, FR-ATT-03, FR-ATT-07, FR-ATT-13 |
+| 6 | `ATT-04 OUT berhasil; ATT-05 OUT kedua ditolak` | TC-ATT-04, TC-ATT-05 | FR-ATT-05, FR-ATT-06 |
+| 7 | `ATT-06 employee tidak boleh lihat data orang lain` | TC-AUTH-07 | FR-AUTH-05, FR-HIS-02, FR-HIS-08 |
+| 8 | `HR: filter tanggal, status, dashboard` | TC-HIS-10 | FR-HIS-03..07, FR-DSH-01..05 |
+| 9 | `karyawan nonaktif tidak bisa login` | TC-AUTH-04 | FR-AUTH-03, FR-EMP-09, FR-ATT-12 |
+| 10 | `HR menghapus karyawan, riwayatnya, dan tidak memakai ulang ID` | TC-EMP-14, TC-AUTH-03 | FR-EMP-07, FR-EMP-10, FR-AUTH-02 |
+
+> Nama `ATT-01` … `ATT-07` pada kolom kedua adalah penanda di dalam berkas tes unit, **bukan** ID test case. ID test case selalu berawalan modul (`TC-ATT-01` dan seterusnya).
 
 ---
 

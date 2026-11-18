@@ -82,7 +82,7 @@ flowchart LR
 
 | ID | Risiko | Bukti / penyebab | Dampak | P | D | Skor | Tingkat | Mitigasi | Pemicu |
 |---|---|---|---|---|---|---|---|---|---|
-| RISK-06 | Kebocoran data antar karyawan | Isolasi bergantung pada pengecekan `employee_id` di handler | Kepercayaan pengguna rusak | 2 | 5 | 10 | Tinggi | TC-09, TC-56, ST-15..ST-18 dijalankan setiap regresi | Ada respons 200 untuk data milik orang lain |
+| RISK-06 | Kebocoran data antar karyawan | Isolasi bergantung pada pengecekan `employee_id` di handler | Kepercayaan pengguna rusak | 2 | 5 | 10 | Tinggi | TC-AUTH-07, TC-HIS-08, ST-15..ST-18 dijalankan setiap regresi | Ada respons 200 untuk data milik orang lain |
 | RISK-07 | Foto absensi diambil dari disk tanpa token | Foto hanya disajikan lewat endpoint ber-`auth` (`attendance.js`), bukan `express.static` | Bukti kehadiran bocor | 2 | 4 | 8 | Sedang | Pastikan `uploads/` **tidak** berada di bawah `public/`; uji ST-21 | `GET /uploads/attendance/<berkas>` mengembalikan gambar |
 | RISK-08 | Brute force login | Tidak ada rate limit pada `POST /api/login` (GAP-06) | Akun diambil alih | 3 | 4 | 12 | Tinggi | Batasi percobaan di lapisan depan (reverse proxy) untuk demo; usulkan rate limit (BL-03) | Lonjakan 401 `INVALID_CREDENTIALS` |
 | RISK-09 | Token 12 jam tanpa pencabutan | Stateless JWT; logout hanya menghapus token di klien (`api.js:13-17`) | Token bocor tetap berlaku | 2 | 4 | 8 | Sedang | Perlakukan token seperti password; jangan tampilkan di tangkapan layar/laporan | Ada token di log/screenshot |
@@ -95,7 +95,7 @@ flowchart LR
 | RISK-11 | Titip absen (foto orang lain) | Tidak ada verifikasi wajah; hanya foto + GPS | Data tidak sah | 3 | 4 | 12 | Tinggi | Terima sebagai risiko; usulkan verifikasi wajah (BL-06) | Foto identik berulang antar karyawan |
 | RISK-12 | Lokasi palsu (mock location) | Klien mengirim `lat`/`lng` apa adanya | Geofence tidak bermakna | 3 | 3 | 9 | Tinggi | Usulkan deteksi mock location (BL-07); catat sebagai keterbatasan | Koordinat sama persis antar pengguna |
 | RISK-13 | Karyawan lupa check-out | Tidak ada pengingat | Rekap tidak lengkap; `BELUM_OUT` menumpuk | 4 | 3 | 12 | Tinggi | Pantau tab "Belum OUT" (BP-04); usulkan pengingat (BL-01) | `sudah_out` < `sudah_in` |
-| RISK-14 | Batas 08:15 salah dihitung | Kesalahan zona waktu bila memakai jam perangkat | Status salah, sengketa | 2 | 4 | 8 | Sedang | Uji unit TC-47 (08:15 vs 08:16) setiap perubahan `utils/time.js` | Status `TEPAT_WAKTU` muncul setelah 08:16 |
+| RISK-14 | Batas 08:15 salah dihitung | Kesalahan zona waktu bila memakai jam perangkat | Status salah, sengketa | 2 | 4 | 8 | Sedang | Uji unit TC-ATT-13 (08:15 vs 08:16) setiap perubahan `utils/time.js` | Status `TEPAT_WAKTU` muncul setelah 08:16 |
 | RISK-15 | Radius office salah | Koordinat/radius keliru saat input | Absensi sah ditolak atau geofence longgar | 3 | 3 | 9 | Tinggi | Prosedur uji radius setelah setiap perubahan (BP-07) | Banyak `OUTSIDE_RADIUS` padahal di kantor |
 | RISK-16 | OUT setelah tengah malam ditolak | `work_date` mengikuti tanggal saat ini (BR-01) | Karyawan shift malam tidak tercatat | 2 | 3 | 6 | Sedang | Nyatakan sebagai keputusan: tanpa shift malam | Keluhan OUT gagal pukul 00:xx |
 | RISK-17 | Penghapusan karyawan menghapus riwayat | `ON DELETE CASCADE` + hapus berkas foto | Data hilang permanen | 2 | 5 | 10 | Tinggi | Default nonaktifkan (INACTIVE), bukan hapus; konfirmasi berlapis | Ada permintaan "hilangkan data" |
@@ -105,7 +105,7 @@ flowchart LR
 | ID | Risiko | Bukti / penyebab | Dampak | P | D | Skor | Tingkat | Mitigasi | Pemicu |
 |---|---|---|---|---|---|---|---|---|---|
 | RISK-18 | Mobile tidak ada sehingga alur karyawan tidak teruji di perangkat nyata | Tidak ada folder mobile (D-05) | Demo alur Employee bergantung curl/Postman | 5 | 3 | **15** | **Kritis** | Siapkan koleksi request siap pakai; jelaskan sebelum UAT (`11-UAT.md` §3) | Penguji meminta aplikasi |
-| RISK-19 | Waktu eksekusi hanya 3 hari | Jadwal `09-Test-Plan.md` §7 | Cakupan tidak penuh | 4 | 3 | 12 | Tinggi | Prioritaskan smoke pack TC-01..TC-13 lalu risiko tertinggi | Sisa TC belum dieksekusi pada 19 Nov |
+| RISK-19 | Waktu eksekusi hanya 3 hari | Jadwal `09-Test-Plan.md` §7 | Cakupan tidak penuh | 4 | 3 | 12 | Tinggi | Prioritaskan smoke pack 13 TC (`10-Test-Case.md` §2) lalu risiko tertinggi | Sisa TC belum dieksekusi pada 19 Nov |
 | RISK-20 | Hasil tes tidak berbukti | Tidak ada kebiasaan menyimpan log | Klaim tidak dapat dipertanggungjawabkan | 3 | 4 | 12 | Tinggi | Aturan `09-Test-Plan.md` §11: tanpa bukti = belum dijalankan | Laporan tanpa berkas pendukung |
 | RISK-21 | Dokumen dan kode menyimpang tanpa catatan | Perubahan kode tanpa memperbarui D1/D6/RTM | Keputusan salah berbasis dokumen lama | 3 | 3 | 9 | Tinggi | Protokol `TASK.md` §7 + `15-Change-Request-Log.md` | Ada FR yang tidak lagi sesuai kode |
 | RISK-22 | UAT tidak dihadiri pengguna sebenarnya | Jadwal padat; penguji hanya internal | Penerimaan tidak sah | 3 | 4 | 12 | Tinggi | Tetapkan penguji & tanggal sebelum 19 Nov; bila tidak bisa, nyatakan UAT internal | Lembar UAT ditandatangani tanpa perwakilan HR/karyawan |
@@ -122,7 +122,7 @@ Penilaian ulang hanya untuk risiko yang **berubah buktinya** selama eksekusi. Sk
 | RISK-02 | Kritis (20) | **Tinggi (16)** | Terbukti, bukan lagi hipotesis: ST-39 (`JWT_SECRET` cadangan dipakai) dan ST-40 (kredensial HR bawaan dapat login). Mitigasi tetap: isi `.env` sebelum demo. |
 | RISK-03 | Tinggi (12) | **Tinggi (16)** | Commit `3ee2b7a` mengubah "skeleton" menjadi implementasi Laravel penuh; Node `src/` tidak berubah sehingga hasil uji tetap sah untuk baseline, tetapi kini ada tumpukan kedua yang belum diuji. |
 | RISK-05 | Tinggi (12) | **Rendah (4)** | Mitigasi dijalankan: `DB_PATH`/`UPLOAD_DIR` di folder temp, sehingga `data/` repo tidak tersentuh (`git status` bersih dari artefak uji). |
-| RISK-06 | Tinggi (10) | **Rendah (5)** | ST-15..ST-18 dan TC-09/TC-56 Lulus: permintaan ke data orang lain dibalas `403`, foto milik orang lain tidak terbaca. |
+| RISK-06 | Tinggi (10) | **Rendah (5)** | ST-15..ST-18 dan TC-AUTH-07/TC-HIS-08 Lulus: permintaan ke data orang lain dibalas `403`, foto milik orang lain tidak terbaca. |
 | RISK-07 | Sedang (8) | **Rendah (3)** | ST-21 Lulus: `/uploads/attendance/<berkas>`, `/uploads/<berkas>`, dan path ber-`..` semuanya `404`. |
 | RISK-08 | Tinggi (12) | **Tinggi (12)** | Tidak berubah — justru terbukti: 30 percobaan password salah berurutan tanpa `429` (ST-43, OBS-01). |
 | RISK-10 | Tinggi (12) | **Sedang (6)** | Dokumen diperiksa: tidak ada nilai `.env` yang disalin. Namun ditemukan **BUG-03** (password HR tercetak di log seeding) — risiko berpindah dari dokumen ke log. |

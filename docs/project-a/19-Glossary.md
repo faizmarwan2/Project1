@@ -137,7 +137,7 @@ flowchart LR
 | `FC-NN` | Flowchart | `05` |
 | `BP-NN` | Business Process | `08` |
 | `US-NN` | User Story | `07` |
-| `TC-NN` | Test Case | `10` |
+| `TC-<MOD>-NN` | Test Case, dikelompokkan per modul (`TC-ATT-03` = modul Absensi, kasus ke-3) | `10` |
 | `UAT-NN` | Skenario UAT | `11` |
 | `ST-NN` | Security Test | `16` |
 | `RISK-NN` | Risiko | `14` |

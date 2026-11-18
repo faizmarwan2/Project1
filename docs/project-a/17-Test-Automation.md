@@ -56,7 +56,7 @@ Selama penulisan suite, tiga pemeriksaan awal berstatus merah dan setelah ditelu
 | Gejala | Sebab sebenarnya |
 |---|---|
 | `distance_m`/`radius_m` tidak sesuai | Nilai dibaca dari level respons yang salah; `distance_m` berada di dalam objek `check_in`/`check_out` |
-| Indeks `UNIQUE` tidak terdeteksi | Nama indeks berbeda dari yang diasumsikan; constraint tetap aktif (TC-05 membuktikan `409`) |
+| Indeks `UNIQUE` tidak terdeteksi | Nama indeks berbeda dari yang diasumsikan; constraint tetap aktif (TC-ATT-02 membuktikan `409`) |
 | Foto tampak "rusak" di UI | Data uji memakai `Buffer.alloc`/PNG 16×16, bukan JPEG; dengan JPEG 800×600 nyata foto termuat (`naturalWidth=800`) |
 
 Pelajaran: kegagalan pertama harus diuji dengan **dua pembacaan** (respons + keadaan DB) sebelum dinyatakan sebagai defect.
@@ -80,9 +80,9 @@ Pelajaran: kegagalan pertama harus diuji dengan **dua pembacaan** (respons + kea
 
 | Kelompok | Jumlah TC | Contoh | Alasan |
 |---|---|---|---|
-| **Unit / DB** | 2 | TC-47 (batas 08:15), TC-48 (nilai status di DB) | Cepat, deterministik, tidak butuh server |
-| **API** | 55 | TC-01..TC-16, TC-18..TC-56, TC-58, TC-59 | Kontrak stabil; hasil dapat dibandingkan persis |
-| **Browser** | 4 | TC-17, TC-57, TC-60, TC-61 | Butuh render, unduhan, dan `localStorage` |
+| **Unit / DB** | 2 | TC-ATT-13 (batas 08:15), TC-ATT-14 (nilai status di DB) | Cepat, deterministik, tidak butuh server |
+| **API** | 55 | `TC-AUTH-01` … `TC-AUTH-08`, `TC-EMP-01` … `TC-EMP-15`, `TC-ADM-01` … `TC-ADM-03`, `TC-OFF-01` … `TC-OFF-06`, `TC-ATT-01` … `TC-ATT-12`, `TC-ATT-14`, `TC-HIS-01` … `TC-HIS-08`, `TC-HIS-10`, `TC-DSH-01`, `TC-DSH-02` | Kontrak stabil; hasil dapat dibandingkan persis |
+| **Browser** | 4 | TC-AUTH-09, TC-HIS-09, TC-WEB-01, TC-WEB-02 | Butuh render, unduhan, dan `localStorage` |
 | **Manual / UAT** | 15 UAT | `11-UAT.md` | Melibatkan manusia & penilaian |
 
 **Aturan pemilihan:** otomasi hal yang **berulang dan pasti**; biarkan manusia menilai **kelayakan dan kenyamanan**.
@@ -191,14 +191,14 @@ export function photoForm(lat, lng, name = 'photo') {
 
 ## 5. Contoh Tes API
 
-### 5.1 TC-02 — Tanpa token harus 401
+### 5.1 TC-AUTH-01 — Tanpa token harus 401
 
 ```js
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { api } from './helpers.mjs';
 
-test('TC-02: tanpa token => 401 UNAUTHORIZED', async () => {
+test('TC-AUTH-01: tanpa token => 401 UNAUTHORIZED', async () => {
   for (const path of ['/api/me', '/api/attendance/today', '/api/employees']) {
     const r = await api(path);
     assert.equal(r.status, 401, path);
@@ -208,10 +208,10 @@ test('TC-02: tanpa token => 401 UNAUTHORIZED', async () => {
 });
 ```
 
-### 5.2 TC-16 — Employee tidak boleh menembus endpoint HR
+### 5.2 TC-AUTH-06 — Employee tidak boleh menembus endpoint HR
 
 ```js
-test('TC-16: Employee ke endpoint HR => 403', async () => {
+test('TC-AUTH-06: Employee ke endpoint HR => 403', async () => {
   const token = await login(process.env.QA_EMP_EMAIL, process.env.QA_EMP_PASSWORD);
   const paths = [
     ['GET', '/api/employees'], ['POST', '/api/employees'],
@@ -227,10 +227,10 @@ test('TC-16: Employee ke endpoint HR => 403', async () => {
 });
 ```
 
-### 5.3 TC-04 — IN pertama berhasil (multipart)
+### 5.3 TC-ATT-01 — IN pertama berhasil (multipart)
 
 ```js
-test('TC-04: IN pertama => 201 + status sah', async () => {
+test('TC-ATT-01: IN pertama => 201 + status sah', async () => {
   const token = await login(process.env.QA_EMP_EMAIL, process.env.QA_EMP_PASSWORD);
   const r = await api('/api/attendance/check-in', {
     method: 'POST', token,
@@ -243,10 +243,10 @@ test('TC-04: IN pertama => 201 + status sah', async () => {
 });
 ```
 
-### 5.4 TC-05 — IN kedua tidak menduplikasi
+### 5.4 TC-ATT-02 — IN kedua tidak menduplikasi
 
 ```js
-test('TC-05: IN kedua => 409 dan tetap 1 record', async () => {
+test('TC-ATT-02: IN kedua => 409 dan tetap 1 record', async () => {
   const token = await login(process.env.QA_EMP_EMAIL, process.env.QA_EMP_PASSWORD);
   const r = await api('/api/attendance/check-in', { method: 'POST', token, form: photoForm(-7.4296, 111.0095) });
   assert.equal(r.status, 409);
@@ -257,12 +257,12 @@ test('TC-05: IN kedua => 409 dan tetap 1 record', async () => {
 });
 ```
 
-### 5.5 TC-15 — Token kedaluwarsa
+### 5.5 TC-AUTH-05 — Token kedaluwarsa
 
 ```js
 import jwt from 'jsonwebtoken';
 
-test('TC-15: token kedaluwarsa => 401', async () => {
+test('TC-AUTH-05: token kedaluwarsa => 401', async () => {
   const expired = jwt.sign({ sub: 1, role: 'HR' }, process.env.JWT_SECRET, { expiresIn: '-1s' });
   const r = await api('/api/me', { token: expired });
   assert.equal(r.status, 401);
@@ -272,7 +272,7 @@ test('TC-15: token kedaluwarsa => 401', async () => {
 
 > Catatan: `expiresIn: '-1s'` lebih andal daripada menunggu 1 detik nyata.
 
-### 5.6 TC-46 — Berkas yatim dihapus
+### 5.6 TC-ATT-12 — Berkas yatim dihapus
 
 ```js
 import fs from 'node:fs';
@@ -281,7 +281,7 @@ import path from 'node:path';
 const uploadDir = process.env.UPLOAD_DIR;
 const countFiles = () => fs.readdirSync(path.join(uploadDir, 'attendance')).length;
 
-test('TC-46: ditolak karena radius => tidak ada berkas baru', async () => {
+test('TC-ATT-12: ditolak karena radius => tidak ada berkas baru', async () => {
   const token = await login(process.env.QA_EMP_EMAIL, process.env.QA_EMP_PASSWORD);
   const before = countFiles();
   const r = await api('/api/attendance/check-in', { method: 'POST', token, form: photoForm(-6.2, 106.8) });
@@ -293,7 +293,7 @@ test('TC-46: ditolak karena radius => tidak ada berkas baru', async () => {
 
 ---
 
-## 6. Contoh Tes Unit — Batas 08:15 (TC-47)
+## 6. Contoh Tes Unit — Batas 08:15 (TC-ATT-13)
 
 Tes ini **tidak membutuhkan server maupun `node:sqlite`**, sehingga dapat dijalankan bahkan pada Node 20.
 
@@ -304,14 +304,14 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const T = require('../src/utils/time.js');
 
-test('TC-47: 08:15 TEPAT_WAKTU, 08:16 TERLAMBAT', () => {
+test('TC-ATT-13: 08:15 TEPAT_WAKTU, 08:16 TERLAMBAT', () => {
   // 01:15Z = 08:15 WIB
   assert.equal(T.attendanceStatus(new Date('2026-11-18T01:15:00Z')), 'TEPAT_WAKTU');
   // 01:16Z = 08:16 WIB
   assert.equal(T.attendanceStatus(new Date('2026-11-18T01:16:00Z')), 'TERLAMBAT');
 });
 
-test('TC-47b: 08:14 juga TEPAT_WAKTU', () => {
+test('TC-ATT-13b: 08:14 juga TEPAT_WAKTU', () => {
   assert.equal(T.attendanceStatus(new Date('2026-11-18T01:14:59Z')), 'TEPAT_WAKTU');
 });
 ```
@@ -320,12 +320,12 @@ test('TC-47b: 08:14 juga TEPAT_WAKTU', () => {
 
 ---
 
-## 7. Contoh Tes DB (TC-48)
+## 7. Contoh Tes DB (TC-ATT-14)
 
 ```js
 import { DatabaseSync } from 'node:sqlite';
 
-test('TC-48: status tersimpan hanya dua nilai', () => {
+test('TC-ATT-14: status tersimpan hanya dua nilai', () => {
   const db = new DatabaseSync(process.env.DB_PATH);
   const rows = db.prepare('SELECT DISTINCT status FROM attendances').all();
   db.close();
@@ -335,21 +335,21 @@ test('TC-48: status tersimpan hanya dua nilai', () => {
 
 ---
 
-## 8. Otomasi Browser (TC-17, TC-57, TC-60, TC-61)
+## 8. Otomasi Browser (TC-AUTH-09, TC-HIS-09, TC-WEB-01, TC-WEB-02)
 
 | TC | Yang diperiksa | Cara |
 |---|---|---|
-| TC-17 | Akun Employee ditolak; logout menghapus token; token rusak → Login | Isi `localStorage`, muat ulang, periksa teks & tidak ada tabel data |
-| TC-57 | Unduh CSV | Tunggu event `download`, baca isi berkas, hitung baris & kolom |
-| TC-60 | Navigasi hash & empty state | Klik menu, periksa URL + elemen |
-| TC-61 | Dialog kredensial, salin, toast, refresh 60 s | Periksa teks dialog; perlakukan izin clipboard sebagai `N/A` bila tidak tersedia |
+| TC-AUTH-09 | Akun Employee ditolak; logout menghapus token; token rusak → Login | Isi `localStorage`, muat ulang, periksa teks & tidak ada tabel data |
+| TC-HIS-09 | Unduh CSV | Tunggu event `download`, baca isi berkas, hitung baris & kolom |
+| TC-WEB-01 | Navigasi hash & empty state | Klik menu, periksa URL + elemen |
+| TC-WEB-02 | Dialog kredensial, salin, toast, refresh 60 s | Periksa teks dialog; perlakukan izin clipboard sebagai `N/A` bila tidak tersedia |
 
 Kerangka minimal:
 
 ```js
 import { chromium } from 'playwright';
 
-test('TC-17: token rusak => kembali ke Login', async () => {
+test('TC-AUTH-09: token rusak => kembali ke Login', async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.goto(process.env.QA_BASE);
@@ -423,17 +423,17 @@ jobs:
 
 | Modul | TC | Otomatis | Keterangan |
 |---|---|---|---|
-| AUTH | TC-02, 12, 14, 15, 16, 18 | 6 | API |
-| AUTH (UI) | TC-17 | 0 | Browser |
-| EMP | TC-01, 11, 13, 19..31 | 14 | API + hitung berkas |
-| ADM | TC-32..34 | 3 | API |
-| OFF | TC-35..40 | 6 | API |
-| ATT | TC-03..08, 29, 41..46, 48 | 15 | API + DB |
-| ATT (waktu) | TC-47 | 1 | Unit, tanpa server |
-| HIS | TC-09, 10, 49..56 | 10 | API |
-| HIS (CSV) | TC-57 | 0 | Browser |
-| DSH | TC-58, 59 | 2 | API |
-| WEB | TC-60, 61 | 0 | Browser |
+| AUTH | `TC-AUTH-01` … `TC-AUTH-08` | 8 | API |
+| AUTH (UI) | `TC-AUTH-09` | 0 | Browser |
+| EMP | `TC-EMP-01` … `TC-EMP-15` | 15 | API + hitung berkas |
+| ADM | `TC-ADM-01` … `TC-ADM-03` | 3 | API |
+| OFF | `TC-OFF-01` … `TC-OFF-06` | 6 | API |
+| ATT | `TC-ATT-01` … `TC-ATT-12`, `TC-ATT-14` | 13 | API + DB |
+| ATT (waktu) | `TC-ATT-13` | 1 | Unit, tanpa server |
+| HIS | `TC-HIS-01` … `TC-HIS-08`, `TC-HIS-10` | 9 | API |
+| HIS (CSV) | `TC-HIS-09` | 0 | Browser |
+| DSH | `TC-DSH-01`, `TC-DSH-02` | 2 | API |
+| WEB | `TC-WEB-01`, `TC-WEB-02` | 0 | Browser |
 
 **Total:** 57 dapat diotomasi (2 unit/DB + 55 API), 4 memerlukan browser, 15 UAT tetap manual.
 
@@ -444,11 +444,11 @@ jobs:
 | Berkas usulan | Isi | Status |
 |---|---|---|
 | `qa/helpers.mjs` | Klien API, login, form foto | Belum dibuat |
-| `qa/auth.test.mjs` | TC-02, 15, 16 | Belum dibuat |
-| `qa/attendance.test.mjs` | TC-03..08, 41..48 | Belum dibuat |
-| `qa/history.test.mjs` | TC-09, 10, 49..56 | Belum dibuat |
-| `qa/time.test.mjs` | TC-47 | Belum dibuat |
-| `qa/ui.spec.mjs` | TC-17, 57, 60, 61 | Belum dibuat |
+| `qa/auth.test.mjs` | `TC-AUTH-01` … `TC-AUTH-06`, `TC-AUTH-08` | Belum dibuat |
+| `qa/attendance.test.mjs` | `TC-ATT-01` … `TC-ATT-14` | Belum dibuat |
+| `qa/history.test.mjs` | `TC-HIS-01` … `TC-HIS-08`, `TC-HIS-10` | Belum dibuat |
+| `qa/time.test.mjs` | `TC-ATT-13` | Belum dibuat |
+| `qa/ui.spec.mjs` | `TC-AUTH-09`, `TC-HIS-09`, `TC-WEB-01`, `TC-WEB-02` | Belum dibuat |
 
 **Mengapa belum dibuat:** menulis berkas kode baru di luar `docs/` berada di luar kewenangan build ini, dan saat ini tidak dapat diverifikasi karena Node di mesin belum memenuhi syarat. Dokumen ini menyediakan resepnya agar dapat langsung dieksekusi setelah prasyarat terpenuhi.
 
