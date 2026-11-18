@@ -114,7 +114,7 @@ async function boot() {
     <aside class="side">
       <div class="brand"><i></i> Absensi HR</div>
       <nav class="nav">${Object.entries(PAGES).map(([k, [t]]) => `<a href="#/${k}" data-k="${k}">${t}</a>`).join('')}</nav>
-      <div class="who"><span>${esc(me.email)}</span><button class="btn sm" id="lo">Keluar</button></div>
+      <div class="who"><span>${esc(me.email)}${me.account_code ? ` · ${esc(me.account_code)}` : ''}</span><button class="btn sm" id="lo">Keluar</button></div>
     </aside>
     <main class="main" id="view"></main>
   </div>`;
@@ -275,61 +275,98 @@ async function detail(r) {
 
 /* ---------- Karyawan ---------- */
 async function pgEmployees(v) {
-  const f = { search: '', status: '', page: 1 };
+  const f = { accountType: 'EMPLOYEE', search: '', status: '', page: 1 };
   v.innerHTML = `
-    <div class="head"><h1>Karyawan</h1><button class="btn teal" id="add">Tambah karyawan</button></div>
+    <div class="head"><h1 id="account-heading">Karyawan</h1><button class="btn teal" id="add">Tambah akun</button></div>
     <div class="card pad" style="margin-bottom:14px"><form class="row" id="ef" onsubmit="return false">
+      <label>Jenis akun<select name="accountType"><option value="EMPLOYEE">Karyawan</option><option value="HR">Admin</option></select></label>
       <label style="flex:1;min-width:180px">Cari<input name="search" type="search" placeholder="Nama, kode, atau email"></label>
-      <label>Status<select name="status"><option value="">Semua</option><option value="ACTIVE">Aktif</option><option value="INACTIVE">Nonaktif</option></select></label>
+      <label id="status-filter">Status<select name="status"><option value="">Semua</option><option value="ACTIVE">Aktif</option><option value="INACTIVE">Nonaktif</option></select></label>
     </form></div>
     <div class="card"><div id="ebody">${loading}</div></div>`;
   let rows = [];
-  const load = async () => {
+  const load = async (accountType) => {
+    if (accountType) {
+      f.accountType = accountType;
+      form.elements.accountType.value = accountType;
+      f.status = '';
+      form.elements.status.value = '';
+      f.page = 1;
+    }
     $('#ebody').innerHTML = loading;
     try {
-      const r = await api('/employees?' + qs({ search: f.search, status: f.status, page: f.page, limit: 20 })); rows = r.data; const m = r.meta;
-      $('#ebody').innerHTML = rows.length ? `<div class="tw"><table><thead><tr><th>Kode</th><th>Nama</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody>
-        ${rows.map((e, i) => `<tr><td>${esc(e.employee_code)}</td><td>${esc(e.name)}</td><td>${esc(e.email || '–')}</td>
-          <td>${e.status === 'ACTIVE' ? '<span class="badge b-ok">Aktif</span>' : '<span class="badge b-off">Nonaktif</span>'}</td>
-          <td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-e="${i}">Ubah</button> <button class="btn ghost sm" data-r="${i}">Reset password</button> <button class="btn ghost sm" data-del="${i}">Hapus</button></td></tr>`).join('')}
+      const isAdmin = f.accountType === 'HR';
+      const params = isAdmin ? { search: f.search, page: f.page, limit: 20 } : { search: f.search, status: f.status, page: f.page, limit: 20 };
+      const r = await api(`/${isAdmin ? 'admins' : 'employees'}?` + qs(params)); rows = r.data; const m = r.meta;
+      $('#account-heading').textContent = isAdmin ? 'Admin' : 'Karyawan';
+      $('#ebody').innerHTML = rows.length ? `<div class="tw"><table><thead><tr>${isAdmin ? '<th>Kode admin</th><th>Nama</th><th>Email</th>' : '<th>Kode</th><th>Nama</th><th>Email</th><th>Status</th><th></th>'}</tr></thead><tbody>
+        ${rows.map((e, i) => isAdmin
+          ? `<tr><td>${esc(e.account_code)}</td><td>${esc(e.name)}</td><td>${esc(e.email)}</td></tr>`
+          : `<tr><td>${esc(e.employee_code)}</td><td>${esc(e.name)}</td><td>${esc(e.email || '–')}</td>
+            <td>${e.status === 'ACTIVE' ? '<span class="badge b-ok">Aktif</span>' : '<span class="badge b-off">Nonaktif</span>'}</td>
+            <td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-e="${i}">Ubah</button> <button class="btn ghost sm" data-r="${i}">Reset password</button> <button class="btn ghost sm" data-del="${i}">Hapus</button></td></tr>`).join('')}
         </tbody></table></div>
-        <div class="pager"><span>${m.total} karyawan · halaman ${m.page} dari ${Math.max(1, m.total_pages)}</span>
+        <div class="pager"><span>${m.total} ${isAdmin ? 'admin' : 'karyawan'} · halaman ${m.page} dari ${Math.max(1, m.total_pages)}</span>
         <span><button class="btn ghost sm" id="pv" ${m.page <= 1 ? 'disabled' : ''}>Sebelumnya</button> <button class="btn ghost sm" id="nx" ${m.page >= m.total_pages ? 'disabled' : ''}>Berikutnya</button></span></div>`
-        : '<div class="empty">Belum ada karyawan yang cocok. Klik “Tambah karyawan” untuk membuat yang pertama.</div>';
-      document.querySelectorAll('[data-e]').forEach((b) => (b.onclick = () => empForm(rows[+b.dataset.e], load)));
-      document.querySelectorAll('[data-r]').forEach((b) => (b.onclick = () => resetPw(rows[+b.dataset.r])));
-      document.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => deleteEmployee(rows[+b.dataset.del], load)));
+        : `<div class="empty">${isAdmin ? 'Belum ada akun admin.' : 'Belum ada karyawan yang cocok. Klik “Tambah akun” untuk membuat yang pertama.'}</div>`;
+      $('#status-filter').hidden = isAdmin;
+      if (!isAdmin) {
+        document.querySelectorAll('[data-e]').forEach((b) => (b.onclick = () => empForm(rows[+b.dataset.e], load)));
+        document.querySelectorAll('[data-r]').forEach((b) => (b.onclick = () => resetPw(rows[+b.dataset.r])));
+        document.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => deleteEmployee(rows[+b.dataset.del], load)));
+      }
       const pv = $('#pv'), nx = $('#nx');
       if (pv) pv.onclick = () => { f.page--; load(); }; if (nx) nx.onclick = () => { f.page++; load(); };
     } catch (e) { $('#ebody').innerHTML = errBox(e.message); }
   };
   const form = $('#ef');
-  form.oninput = () => { clearTimeout(form.t); form.t = setTimeout(() => { f.search = form.search.value.trim(); f.status = form.status.value; f.page = 1; load(); }, 350); };
+  form.oninput = (e) => {
+    if (e.target.name === 'accountType') return;
+    clearTimeout(form.t);
+    form.t = setTimeout(() => { f.search = form.search.value.trim(); f.status = form.status.value; f.page = 1; load(); }, 350);
+  };
+  form.elements.accountType.onchange = () => {
+    f.accountType = form.elements.accountType.value;
+    f.status = '';
+    form.elements.status.value = '';
+    f.page = 1;
+    load();
+  };
   $('#add').onclick = () => empForm(null, load);
   load();
 }
 
 function empForm(e, reload) {
   const edit = !!e;
-  const d = modal(`<form novalidate><h2>${edit ? 'Ubah karyawan' : 'Tambah karyawan'}</h2><div id="fe"></div>
+  const d = modal(`<form novalidate><h2>${edit ? 'Ubah karyawan' : 'Tambah akun'}</h2><div id="fe"></div>
+    ${edit ? '' : `<label>Jenis akun<select name="role"><option value="EMPLOYEE">Karyawan</option><option value="HR">HR/Admin</option></select></label>
+      <span class="hint" id="account-code-hint">ID otomatis: ky01, ky02, dan seterusnya.</span>`}
     <label>Nama<input name="name" required value="${esc(e?.name)}"></label>
-    <label>Kode karyawan${edit ? '' : ' <span class="hint">(opsional; auto increment: ky01, ky02, ...)</span>'}<input name="employee_code" value="${esc(e?.employee_code)}"></label>
+    ${edit ? `<label>Kode karyawan<input name="employee_code" value="${esc(e.employee_code)}"></label>` : ''}
     <label>Email login${edit ? '' : ' <span class="hint">(opsional, otomatis nama.depan@ethes.tech)</span>'}<input name="email" type="email" value="${esc(e?.email)}"></label>
     ${edit ? `<label>Status<select name="status"><option value="ACTIVE" ${e.status === 'ACTIVE' ? 'selected' : ''}>Aktif</option><option value="INACTIVE" ${e.status === 'INACTIVE' ? 'selected' : ''}>Nonaktif</option></select>
       <span class="hint">Karyawan nonaktif tidak bisa login dan IN/OUT. Riwayat tetap tersimpan.</span></label>` : ''}
     <label>${edit ? 'Password baru' : 'Password'} <span class="hint">${edit ? '(kosongkan jika tidak diganti)' : '(opsional, acak jika kosong; minimal 8 karakter)'}</span><input name="password" type="text" autocomplete="off"></label>
     <div class="actions"><button type="button" class="btn ghost" onclick="closeModal()">Batal</button><button class="btn" type="submit">${edit ? 'Simpan perubahan' : 'Simpan'}</button></div></form>`);
   const form = $('form', d);
+  if (!edit) form.elements.role.onchange = () => {
+    $('#account-code-hint', d).textContent = form.elements.role.value === 'HR'
+      ? 'ID otomatis: HR01, HR02, dan seterusnya.'
+      : 'ID otomatis: ky01, ky02, dan seterusnya.';
+  };
   form.onsubmit = async (ev) => {
     ev.preventDefault();
     const b = form.querySelector('[type=submit]'), body = {};
     for (const k of ['name', 'employee_code', 'email', 'password', 'status']) { const el = form.elements[k]; if (el && (el.value.trim() || (edit && k !== 'password'))) body[k] = el.value.trim(); }
     if (!body.name) { $('#fe', d).innerHTML = errBox('Nama wajib diisi'); return; }
+    const role = edit ? 'EMPLOYEE' : form.elements.role.value;
     b.disabled = true; $('#fe', d).innerHTML = '';
     try {
-      const r = await api(edit ? '/employees/' + e.id : '/employees', { method: edit ? 'PUT' : 'POST', json: body });
-      if (!edit) credsDialog('Karyawan ditambahkan', r.name, r.email, r.initial_password); else { closeModal(); toast('Perubahan disimpan'); }
-      reload();
+      const r = await api(edit ? '/employees/' + e.id : role === 'HR' ? '/admins' : '/employees', { method: edit ? 'PUT' : 'POST', json: body });
+      if (!edit) {
+        credsDialog(role === 'HR' ? 'Admin ditambahkan' : 'Karyawan ditambahkan', r.name, r.email, r.initial_password, r.account_code || r.employee_code, role);
+        reload(role);
+      } else { closeModal(); toast('Perubahan disimpan'); reload(); }
     } catch (err) { $('#fe', d).innerHTML = errBox(err.message); b.disabled = false; }
   };
 }
@@ -351,13 +388,14 @@ function deleteEmployee(e, reload) {
   };
 }
 
-function credsDialog(title, name, email, pw) {
+function credsDialog(title, name, email, pw, code, role = 'EMPLOYEE') {
   const d = modal(`<div class="box"><h2>${esc(title)}</h2>
-    <p style="margin:0">Berikan akun ini ke <b>${esc(name)}</b> untuk login di aplikasi mobile. Password hanya tampil sekali, jadi salin sekarang.</p>
+    <p style="margin:0">Berikan akun ini ke <b>${esc(name)}</b> untuk login di ${role === 'HR' ? 'web HR' : 'aplikasi mobile'}. Password hanya tampil sekali, jadi salin sekarang.</p>
+    <div><div class="hint">Kode akun</div><div class="secret">${esc(code)}</div></div>
     <div><div class="hint">Email</div><div class="secret">${esc(email)}</div></div>
     <div><div class="hint">Password</div><div class="secret">${esc(pw)}</div></div>
-    <div class="actions"><button class="btn ghost" id="cp">Salin email &amp; password</button><button class="btn" onclick="closeModal()">Selesai</button></div></div>`);
-  $('#cp', d).onclick = async () => { try { await navigator.clipboard.writeText(`Email: ${email}\nPassword: ${pw}`); toast('Disalin'); } catch { toast('Gagal menyalin, salin manual', true); } };
+    <div class="actions"><button class="btn ghost" id="cp">Salin kode, email &amp; password</button><button class="btn" onclick="closeModal()">Selesai</button></div></div>`);
+  $('#cp', d).onclick = async () => { try { await navigator.clipboard.writeText(`Kode: ${code}\nEmail: ${email}\nPassword: ${pw}`); toast('Disalin'); } catch { toast('Gagal menyalin, salin manual', true); } };
 }
 
 function resetPw(e) {
@@ -365,7 +403,7 @@ function resetPw(e) {
     <div class="actions"><button class="btn ghost" onclick="closeModal()">Batal</button><button class="btn" id="go">Reset password</button></div></div>`);
   $('#go', d).onclick = async (ev) => {
     ev.target.disabled = true;
-    try { const r = await api(`/employees/${e.id}/reset-password`, { method: 'POST' }); credsDialog('Password direset', e.name, r.email, r.new_password); }
+    try { const r = await api(`/employees/${e.id}/reset-password`, { method: 'POST' }); credsDialog('Password direset', e.name, r.email, r.new_password, e.employee_code); }
     catch (err) { $('#fe', d).innerHTML = errBox(err.message); ev.target.disabled = false; }
   };
 }

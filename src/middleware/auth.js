@@ -12,7 +12,7 @@ function auth(req, _res, next) {
   try { payload = jwt.verify(token, cfg.jwtSecret); }
   catch { return next(new ApiError(401, 'Token tidak valid atau kedaluwarsa', 'UNAUTHORIZED')); }
 
-  const user = db.prepare('SELECT id, employee_id, email, role FROM users WHERE id = ?').get(payload.sub);
+  const user = db.prepare('SELECT id, employee_id, name, account_code, email, role FROM users WHERE id = ?').get(payload.sub);
   if (!user) return next(new ApiError(401, 'User tidak ditemukan', 'UNAUTHORIZED'));
   req.user = user;
   next();
