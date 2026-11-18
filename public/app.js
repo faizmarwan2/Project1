@@ -63,7 +63,7 @@ function renderLogin(msg) {
   $('#app').innerHTML = `
   <div class="login">
     <section class="login-art">
-      <div class="brand" style="padding:0"><i></i> Absensi HR</div>
+      <div class="brand login-brand"><img src="/images/logo.png" alt="Ethes Tech"></div>
       <div>
         <div class="clock" id="clk">--:--</div>
         <small class="muted" id="clkd" style="display:block;margin:8px 0 28px;color:#aab6d3">Waktu server: Asia/Jakarta</small>
@@ -105,20 +105,38 @@ function renderLogin(msg) {
 
 /* ---------- shell & routing ---------- */
 const PAGES = { dashboard: ['Dashboard', pgDashboard], absensi: ['Absensi', pgAttendance], karyawan: ['Karyawan', pgEmployees], office: ['Office', pgOffices] };
+const NAV_ICONS = { dashboard: '🏠', absensi: '🗓️', karyawan: '👥', office: '🏢' };
 
 async function boot() {
   if (!store.token) return renderLogin();
   try { const m = await api('/me'); if (m.role !== 'HR') throw 0; me = m; } catch { if (store.token) logout(); return; }
   $('#app').innerHTML = `
   <div class="shell">
-    <aside class="side">
-      <div class="brand"><i></i> Absensi HR</div>
-      <nav class="nav">${Object.entries(PAGES).map(([k, [t]]) => `<a href="#/${k}" data-k="${k}">${t}</a>`).join('')}</nav>
+    <aside class="side" id="app-sidebar">
+      <div class="brand"><img src="/images/logo.png" alt="Ethes Tech"></div>
+      <nav class="nav">${Object.entries(PAGES).map(([k, [t]]) => `<a href="#/${k}" data-k="${k}"><span class="nav-icon" aria-hidden="true">${NAV_ICONS[k]}</span><span>${t}</span></a>`).join('')}</nav>
       <div class="who"><span>${esc(me.email)}${me.account_code ? ` · ${esc(me.account_code)}` : ''}</span><button class="btn sm" id="lo">Keluar</button></div>
     </aside>
-    <main class="main" id="view"></main>
+    <button class="nav-overlay" id="nav-overlay" type="button" aria-label="Tutup menu"></button>
+    <main class="main">
+      <div class="main-toolbar"><button class="btn ghost sm sidebar-toggle" id="sidebar-toggle" type="button" aria-controls="app-sidebar" aria-expanded="false" aria-label="Buka menu" title="Buka menu">☰</button></div>
+      <div id="view"></div>
+    </main>
   </div>`;
   $('#lo').onclick = () => logout();
+  const setMenuOpen = (open) => {
+    $('.shell').classList.toggle('menu-open', open);
+    const toggle = $('#sidebar-toggle'), label = open ? 'Tutup menu' : 'Buka menu';
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', label);
+    toggle.title = label;
+    if (!open && $('#app-sidebar').contains(document.activeElement)) toggle.focus();
+  };
+  $('#sidebar-toggle').onclick = () => {
+    setMenuOpen(!$('.shell').classList.contains('menu-open'));
+  };
+  $('#nav-overlay').onclick = () => setMenuOpen(false);
+  $('.nav').onclick = () => setMenuOpen(false);
   route();
 }
 window.addEventListener('hashchange', () => me && route());
@@ -136,9 +154,10 @@ function route() {
 async function pgDashboard(v) {
   let date = todayStr(), tab = 'late', data;
   v.innerHTML = `
-    <div class="head"><h1>Dashboard</h1>
-      <div class="row"><label>Tanggal<input type="date" id="dd" value="${date}"></label>
-      <button class="btn ghost" id="rf">Muat ulang</button></div></div>
+    <div class="head dashboard-head">
+      <div><h1>Dashboard</h1><p>Selamat Datang di Sistem Absensi HR!</p></div>
+      <div class="row dashboard-controls"><label>Tanggal<input type="date" id="dd" value="${date}"></label>
+      <button class="btn ghost" id="rf">Muat Ulang</button></div></div>
     <div id="dbody">${loading}</div>`;
   const load = async (quiet) => {
     if (!quiet) $('#dbody').innerHTML = loading;
@@ -146,7 +165,12 @@ async function pgDashboard(v) {
     catch (e) { if (!quiet || !data) $('#dbody').innerHTML = errBox(e.message); else toast('Gagal memperbarui: ' + e.message, true); }
   };
   const draw = () => {
-    const s = data.summary, max = Math.max(1, ...data.trend.map((t) => t.sudah_in));
+    const s = data.summary;
+    const trendMax = Math.max(10, Math.ceil(Math.max(...data.trend.map((t) => t.sudah_in)) / 5) * 5);
+    const points = (key) => data.trend.map((t, i) => ({
+      x: 34 + i * 42, y: 114 - (t[key] / trendMax) * 90, day: t.date.slice(8), date: t.date, value: t[key],
+    }));
+    const line = (key) => points(key).map(({ x, y }, i) => `${i ? 'L' : 'M'} ${x} ${y}`).join(' ');
     const lists = {
       late: ['Terlambat', data.late], out: ['Belum OUT', data.not_checked_out], no: ['Belum IN', data.not_checked_in],
     };
@@ -156,18 +180,25 @@ async function pgDashboard(v) {
         ${tile('t-in', s.sudah_in, 'Sudah IN')}${tile('t-ok', s.tepat_waktu, 'Tepat waktu')}${tile('t-late', s.terlambat, 'Terlambat')}
         ${tile('t-out', s.belum_out, 'Belum OUT')}${tile('t-no', s.belum_in, 'Belum IN')}
       </div>
-      <div class="grid2">
-        <div class="card">
+      <div class="grid2 dashboard-grid">
+        <div class="card dashboard-panel attendance-panel">
+          <div class="panel-head"><h2><span aria-hidden="true">◷</span>Kehadiran Hari Ini</h2><a href="#/absensi">Lihat Semua <span aria-hidden="true">›</span></a></div>
           <div class="tabs">${Object.entries(lists).map(([k, [t, l]]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${t}<b>${l.length}</b></button>`).join('')}</div>
           <div class="tw">${rows.length ? `<table><thead><tr><th>Kode</th><th>Nama</th>${tab === 'no' ? '' : '<th>IN</th><th>OUT</th>'}</tr></thead><tbody>
-            ${rows.map((r) => `<tr><td>${esc(r.employee_code)}</td><td>${esc(r.name)}</td>${tab === 'no' ? '' : `<td class="num">${hhmm(r.check_in_at)}</td><td class="num">${outBadge(r)}</td>`}</tr>`).join('')}
+            ${rows.map((r) => `<tr><td data-label="Kode">${esc(r.employee_code)}</td><td data-label="Nama">${esc(r.name)}</td>${tab === 'no' ? '' : `<td data-label="IN" class="num">${hhmm(r.check_in_at)}</td><td data-label="OUT" class="num">${outBadge(r)}</td>`}</tr>`).join('')}
             </tbody></table>` : `<div class="empty">${tab === 'late' ? 'Tidak ada yang terlambat.' : tab === 'out' ? 'Semua yang sudah IN sudah OUT.' : 'Semua karyawan aktif sudah IN.'}</div>`}</div>
         </div>
-        <div class="card pad">
-          <h2>7 hari terakhir</h2>
-          <div class="trend">${data.trend.map((t) => `<div title="${dmy(t.date)}: ${t.sudah_in} hadir, ${t.terlambat} terlambat"><em>${t.sudah_in}</em>
-            <span class="bar" style="height:${(t.sudah_in / max) * 100 * 0.8}%">${t.terlambat ? `<i style="height:${(t.terlambat / t.sudah_in) * 100}%"></i>` : ''}</span>${t.date.slice(8)}</div>`).join('')}</div>
-          <div class="legend"><span><s style="background:var(--teal)"></s>Hadir</span><span><s style="background:var(--amber)"></s>Terlambat</span></div>
+        <div class="card pad dashboard-panel trend-panel">
+          <h2><span aria-hidden="true">▮▮</span>7 Hari Terakhir</h2>
+          <svg class="trend-chart" viewBox="0 0 320 150" role="img" aria-label="Grafik kehadiran dan keterlambatan selama tujuh hari terakhir">
+            ${[0, trendMax / 2, trendMax].map((n) => { const y = 114 - (n / trendMax) * 90; return `<line x1="34" y1="${y}" x2="286" y2="${y}" class="chart-grid"/><text x="26" y="${y + 4}" text-anchor="end" class="chart-label">${Math.round(n)}</text>`; }).join('')}
+            <path d="${line('sudah_in')}" class="chart-present"/>
+            <path d="${line('terlambat')}" class="chart-late"/>
+            ${points('sudah_in').map(({ x, y, date, value }) => `<circle cx="${x}" cy="${y}" r="3" class="chart-dot-present"><title>${dmy(date)}: ${value} hadir</title></circle>`).join('')}
+            ${points('terlambat').map(({ x, y }) => `<circle cx="${x}" cy="${y}" r="2.5" class="chart-dot-late"/>`).join('')}
+            ${points('sudah_in').map(({ x, day }) => `<text x="${x}" y="138" text-anchor="middle" class="chart-label">${day}</text>`).join('')}
+          </svg>
+          <div class="legend"><span><s class="legend-present"></s>Hadir</span><span><s class="legend-late"></s>Terlambat</span></div>
           <p class="muted" style="margin:14px 0 0">Total karyawan aktif: <b>${data.total_active_employees}</b></p>
         </div>
       </div>`;
@@ -184,22 +215,21 @@ async function pgDashboard(v) {
 async function pgAttendance(v) {
   const f = { preset: 'today', from: '', to: '', status: '', search: '', page: 1 };
   v.innerHTML = `
-    <div class="head"><h1>Absensi</h1><button class="btn ghost" id="csv">Unduh CSV</button></div>
-    <div class="card pad" style="margin-bottom:14px"><form class="row" id="af">
-      <label>Periode<select name="preset">
+    <div class="head attendance-head"><h1>Absensi</h1><button class="btn teal" id="csv">Unduh CSV</button></div>
+    <div class="card attendance-filters"><form class="attendance-filter-grid" id="af">
+      <label><span>Periode</span><select name="preset">
         ${[['today', 'Hari ini'], ['yesterday', 'Kemarin'], ['this_week', 'Minggu ini'], ['last7', '7 hari terakhir'], ['last30', '30 hari terakhir'], ['this_month', 'Bulan ini'], ['last_month', 'Bulan lalu'], ['custom', 'Pilih tanggal…']].map(([k, t]) => `<option value="${k}">${t}</option>`).join('')}</select></label>
-      <label class="cust" hidden>Dari<input type="date" name="from"></label>
-      <label class="cust" hidden>Sampai<input type="date" name="to"></label>
-      <label>Status<select name="status"><option value="">Semua</option>
+      <label><span>Dari</span><input type="date" name="from"></label>
+      <label><span>Sampai</span><input type="date" name="to"></label>
+      <label><span>Status</span><select name="status"><option value="">Semua</option>
         ${['TEPAT_WAKTU', 'TERLAMBAT', 'BELUM_OUT', 'SUDAH_OUT', 'BELUM_IN'].map((s) => `<option value="${s}">${STATUS[s][0]}</option>`).join('')}</select></label>
-      <label style="flex:1;min-width:180px">Cari<input name="search" type="search" placeholder="Nama atau kode karyawan"></label>
-    </form><p class="hint" id="ah" style="margin:8px 0 0"></p></div>
-    <div class="card"><div id="abody">${loading}</div></div>`;
+      <label><span>Cari</span><input name="search" type="search" placeholder="Nama atau kode karyawan"></label>
+    </form><p class="hint attendance-period" id="ah"></p></div>
+    <div class="card attendance-list-card"><div id="abody">${loading}</div></div>`;
   const form = $('#af');
   const sync = () => {
     f.preset = form.preset.value; f.status = form.status.value; f.search = form.search.value.trim();
     f.from = form.from.value; f.to = form.to.value;
-    document.querySelectorAll('.cust').forEach((e) => (e.hidden = f.preset !== 'custom'));
   };
   const params = (extra = {}) => qs({
     ...(f.preset === 'custom' ? { from: f.from || f.to, to: f.to || f.from } : { preset: f.preset }),
@@ -212,12 +242,12 @@ async function pgAttendance(v) {
       last = await api('/attendance?' + params()); rows = last.data;
       const m = last.meta;
       $('#ah').textContent = `Periode ${dmy(m.from)}${m.from !== m.to ? ' – ' + dmy(m.to) : ''}`;
-      $('#abody').innerHTML = rows.length ? `<div class="tw"><table><thead><tr><th>Tanggal</th><th>Kode</th><th>Nama</th><th>IN</th><th>OUT</th><th>Status</th><th>Foto</th><th></th></tr></thead><tbody>
-        ${rows.map((r, i) => `<tr><td>${dmy(r.work_date)}</td><td>${esc(r.employee_code)}</td><td>${esc(r.employee_name)}</td>
-          <td class="num">${hhmm(r.check_in_at)}</td><td class="num">${outBadge(r)}</td>
-          <td>${r.status === 'BELUM_IN' ? badge('BELUM_IN') : badge(r.status)}</td>
-          <td>${r.check_in ? `<img class="thumb" alt="Foto IN ${esc(r.employee_name)}" data-photo="${esc(r.check_in.photo_url || '')}">` : ''}</td>
-          <td>${r.id ? `<button class="btn ghost sm" data-d="${i}">Detail</button>` : ''}</td></tr>`).join('')}
+      $('#abody').innerHTML = rows.length ? `<div class="tw"><table><thead><tr><th>Tanggal</th><th>Kode</th><th>Nama</th><th>IN</th><th>OUT</th><th>Status</th><th>Foto</th><th>Aksi</th></tr></thead><tbody>
+        ${rows.map((r, i) => `<tr><td data-label="Tanggal">${dmy(r.work_date)}</td><td data-label="Kode">${esc(r.employee_code)}</td><td data-label="Nama">${esc(r.employee_name)}</td>
+          <td data-label="IN" class="num">${hhmm(r.check_in_at)}</td><td data-label="OUT" class="num">${outBadge(r)}</td>
+          <td data-label="Status">${r.status === 'BELUM_IN' ? badge('BELUM_IN') : badge(r.status)}</td>
+          <td data-label="Foto">${r.check_in ? `<img class="thumb" alt="Foto IN ${esc(r.employee_name)}" data-photo="${esc(r.check_in.photo_url || '')}">` : ''}</td>
+          <td data-label="Aksi" class="table-actions">${r.id ? `<button class="btn ghost sm" data-d="${i}">Detail</button>` : ''}</td></tr>`).join('')}
         </tbody></table></div>
         <div class="pager"><span>${m.total} data · halaman ${m.page} dari ${Math.max(1, m.total_pages)}</span>
         <span><button class="btn ghost sm" id="pv" ${m.page <= 1 ? 'disabled' : ''}>Sebelumnya</button> <button class="btn ghost sm" id="nx" ${m.page >= m.total_pages ? 'disabled' : ''}>Berikutnya</button></span></div>`
@@ -230,7 +260,30 @@ async function pgAttendance(v) {
     } catch (e) { $('#abody').innerHTML = errBox(e.message); }
   };
   form.onsubmit = (e) => e.preventDefault();
-  form.oninput = () => { clearTimeout(form.t); form.t = setTimeout(() => { sync(); f.page = 1; if (f.preset === 'custom' && !(f.from || f.to)) return; load(); }, 350); };
+  form.oninput = (e) => {
+    if (e.target.name === 'preset') return;
+    if (e.target.name === 'from' || e.target.name === 'to') form.preset.value = 'custom';
+    clearTimeout(form.t);
+    form.t = setTimeout(() => {
+      sync(); f.page = 1;
+      if (f.preset === 'custom' && !(f.from || f.to)) {
+        $('#ah').textContent = 'Pilih tanggal untuk menampilkan data.';
+        $('#abody').innerHTML = '<div class="empty">Pilih tanggal mulai atau sampai.</div>';
+        return;
+      }
+      load();
+    }, 350);
+  };
+  form.preset.onchange = () => {
+    if (form.preset.value !== 'custom') { form.from.value = ''; form.to.value = ''; }
+    sync(); f.page = 1;
+    if (f.preset === 'custom' && !(f.from || f.to)) {
+      $('#ah').textContent = 'Pilih tanggal untuk menampilkan data.';
+      $('#abody').innerHTML = '<div class="empty">Pilih tanggal mulai atau sampai.</div>';
+      return;
+    }
+    load();
+  };
   $('#csv').onclick = async (e) => {
     const b = e.target; b.disabled = true;
     try {
@@ -277,13 +330,13 @@ async function detail(r) {
 async function pgEmployees(v) {
   const f = { accountType: 'EMPLOYEE', search: '', status: '', page: 1 };
   v.innerHTML = `
-    <div class="head"><h1 id="account-heading">Karyawan</h1><button class="btn teal" id="add">Tambah akun</button></div>
-    <div class="card pad" style="margin-bottom:14px"><form class="row" id="ef" onsubmit="return false">
-      <label>Jenis akun<select name="accountType"><option value="EMPLOYEE">Karyawan</option><option value="HR">Admin</option></select></label>
-      <label style="flex:1;min-width:180px">Cari<input name="search" type="search" placeholder="Nama, kode, atau email"></label>
-      <label id="status-filter">Status<select name="status"><option value="">Semua</option><option value="ACTIVE">Aktif</option><option value="INACTIVE">Nonaktif</option></select></label>
+    <div class="head account-head"><h1 id="account-heading">Karyawan</h1><button class="btn teal" id="add">Tambah akun</button></div>
+    <div class="card account-filters"><form class="account-filter-grid" id="ef" onsubmit="return false">
+      <label><span>Jenis akun</span><select name="accountType"><option value="EMPLOYEE">Karyawan</option><option value="HR">Admin</option></select></label>
+      <label><span>Cari</span><input name="search" type="search" placeholder="Nama, kode, atau email"></label>
+      <label id="status-filter"><span>Status</span><select name="status"><option value="">Semua</option><option value="ACTIVE">Aktif</option><option value="INACTIVE">Nonaktif</option></select></label>
     </form></div>
-    <div class="card"><div id="ebody">${loading}</div></div>`;
+    <div class="card account-list-card"><div id="ebody">${loading}</div></div>`;
   let rows = [];
   const load = async (accountType) => {
     if (accountType) {
@@ -293,23 +346,24 @@ async function pgEmployees(v) {
       form.elements.status.value = '';
       f.page = 1;
     }
+    const isAdmin = f.accountType === 'HR';
+    $('#status-filter').hidden = isAdmin;
+    form.classList.toggle('admin-filter', isAdmin);
     $('#ebody').innerHTML = loading;
     try {
-      const isAdmin = f.accountType === 'HR';
       const params = isAdmin ? { search: f.search, page: f.page, limit: 20 } : { search: f.search, status: f.status, page: f.page, limit: 20 };
       const r = await api(`/${isAdmin ? 'admins' : 'employees'}?` + qs(params)); rows = r.data; const m = r.meta;
       $('#account-heading').textContent = isAdmin ? 'Admin' : 'Karyawan';
-      $('#ebody').innerHTML = rows.length ? `<div class="tw"><table><thead><tr>${isAdmin ? '<th>Kode admin</th><th>Nama</th><th>Email</th>' : '<th>Kode</th><th>Nama</th><th>Email</th><th>Status</th><th></th>'}</tr></thead><tbody>
+      $('#ebody').innerHTML = rows.length ? `<div class="tw"><table><thead><tr>${isAdmin ? '<th>Kode admin</th><th>Nama</th><th>Email</th>' : '<th>Kode</th><th>Nama</th><th>Email</th><th>Status</th><th>Aksi</th>'}</tr></thead><tbody>
         ${rows.map((e, i) => isAdmin
-          ? `<tr><td>${esc(e.account_code)}</td><td>${esc(e.name)}</td><td>${esc(e.email)}</td></tr>`
-          : `<tr><td>${esc(e.employee_code)}</td><td>${esc(e.name)}</td><td>${esc(e.email || '–')}</td>
-            <td>${e.status === 'ACTIVE' ? '<span class="badge b-ok">Aktif</span>' : '<span class="badge b-off">Nonaktif</span>'}</td>
-            <td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" data-e="${i}">Ubah</button> <button class="btn ghost sm" data-r="${i}">Reset password</button> <button class="btn ghost sm" data-del="${i}">Hapus</button></td></tr>`).join('')}
+          ? `<tr><td data-label="Kode admin">${esc(e.account_code)}</td><td data-label="Nama">${esc(e.name)}</td><td data-label="Email">${esc(e.email)}</td></tr>`
+          : `<tr><td data-label="Kode">${esc(e.employee_code)}</td><td data-label="Nama">${esc(e.name)}</td><td data-label="Email">${esc(e.email || '–')}</td>
+            <td data-label="Status">${e.status === 'ACTIVE' ? '<span class="badge b-ok">Aktif</span>' : '<span class="badge b-off">Nonaktif</span>'}</td>
+            <td data-label="Aksi" class="table-actions"><button class="btn ghost sm" data-e="${i}">Ubah</button> <button class="btn ghost sm" data-r="${i}">Reset password</button> <button class="btn ghost sm" data-del="${i}">Hapus</button></td></tr>`).join('')}
         </tbody></table></div>
         <div class="pager"><span>${m.total} ${isAdmin ? 'admin' : 'karyawan'} · halaman ${m.page} dari ${Math.max(1, m.total_pages)}</span>
         <span><button class="btn ghost sm" id="pv" ${m.page <= 1 ? 'disabled' : ''}>Sebelumnya</button> <button class="btn ghost sm" id="nx" ${m.page >= m.total_pages ? 'disabled' : ''}>Berikutnya</button></span></div>`
         : `<div class="empty">${isAdmin ? 'Belum ada akun admin.' : 'Belum ada karyawan yang cocok. Klik “Tambah akun” untuk membuat yang pertama.'}</div>`;
-      $('#status-filter').hidden = isAdmin;
       if (!isAdmin) {
         document.querySelectorAll('[data-e]').forEach((b) => (b.onclick = () => empForm(rows[+b.dataset.e], load)));
         document.querySelectorAll('[data-r]').forEach((b) => (b.onclick = () => resetPw(rows[+b.dataset.r])));
@@ -410,23 +464,41 @@ function resetPw(e) {
 
 /* ---------- Office ---------- */
 async function pgOffices(v) {
-  v.innerHTML = `<div class="head"><h1>Office</h1><button class="btn teal" id="add">Tambah office</button></div>
-    <p class="muted" style="margin-top:-8px;max-width:60ch">Karyawan hanya bisa IN/OUT jika GPS mereka berada di dalam radius salah satu office aktif.</p>
-    <div class="card"><div id="obody">${loading}</div></div>`;
+  v.innerHTML = `<div class="head office-head"><div class="office-heading"><h1>Office</h1>
+      <p>Karyawan hanya bisa IN/OUT jika GPS mereka berada di dalam radius salah satu office aktif.</p></div>
+      <button class="btn teal" id="add">Tambah Office</button></div>
+    <div class="card office-list-card"><div id="obody">${loading}</div></div>`;
   let rows = [];
   const load = async () => {
     try {
       rows = (await api('/offices')).data;
-      $('#obody').innerHTML = rows.length ? `<div class="tw"><table><thead><tr><th>Nama</th><th>Alamat</th><th>Koordinat</th><th>Radius</th><th></th></tr></thead><tbody>
-        ${rows.map((o, i) => `<tr><td><b>${esc(o.name)}</b></td><td>${esc(o.address || '–')}</td>
-          <td><a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${o.latitude}&mlon=${o.longitude}#map=17/${o.latitude}/${o.longitude}">${(+o.latitude).toFixed(5)}, ${(+o.longitude).toFixed(5)}</a></td>
-          <td class="num">${o.radius_m} m</td><td style="text-align:right"><button class="btn ghost sm" data-o="${i}">Ubah</button></td></tr>`).join('')}</tbody></table></div>`
+      $('#obody').innerHTML = rows.length ? `<div class="tw"><table><thead><tr><th>Nama</th><th>Alamat</th><th>Koordinat</th><th>Radius</th><th>Aksi</th></tr></thead><tbody>
+        ${rows.map((o, i) => `<tr><td data-label="Nama"><b>${esc(o.name)}</b></td><td data-label="Alamat">${esc(o.address || '–')}</td>
+          <td data-label="Koordinat"><a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${o.latitude}&mlon=${o.longitude}#map=17/${o.latitude}/${o.longitude}">${(+o.latitude).toFixed(5)}, ${(+o.longitude).toFixed(5)}</a></td>
+          <td data-label="Radius" class="num">${o.radius_m}m</td><td data-label="Aksi" class="office-actions"><button class="btn sm" data-o-edit="${i}">Edit lokasi</button><button class="btn sm" data-o-delete="${i}">Hapus</button></td></tr>`).join('')}</tbody></table></div>`
         : '<div class="empty">Belum ada office aktif. Tambahkan satu agar karyawan bisa IN/OUT.</div>';
-      document.querySelectorAll('[data-o]').forEach((b) => (b.onclick = () => officeForm(rows[+b.dataset.o], load)));
+      document.querySelectorAll('[data-o-edit]').forEach((b) => (b.onclick = () => officeForm(rows[+b.dataset.oEdit], load)));
+      document.querySelectorAll('[data-o-delete]').forEach((b) => (b.onclick = () => disableOffice(rows[+b.dataset.oDelete], load)));
     } catch (e) { $('#obody').innerHTML = errBox(e.message); }
   };
   $('#add').onclick = () => officeForm(null, load);
   load();
+}
+
+function disableOffice(o, reload) {
+  const d = modal(`<div class="box"><h2>Hapus office?</h2>
+    <p>Office <b>${esc(o.name)}</b> akan dinonaktifkan dan tidak dipakai untuk validasi GPS. Riwayat absensi tetap tersimpan.</p><div id="de"></div>
+    <div class="actions"><button type="button" class="btn ghost" id="cancel">Batal</button><button type="button" class="btn" id="confirm">Hapus</button></div></div>`);
+  $('#cancel', d).onclick = closeModal;
+  $('#confirm', d).onclick = async (ev) => {
+    ev.target.disabled = true; $('#de', d).innerHTML = '';
+    try {
+      await api('/offices/' + o.id, { method: 'PUT', json: { is_active: false } });
+      closeModal();
+      toast('Office dinonaktifkan');
+      reload();
+    } catch (err) { $('#de', d).innerHTML = errBox(err.message); ev.target.disabled = false; }
+  };
 }
 
 function officeForm(o, reload) {
