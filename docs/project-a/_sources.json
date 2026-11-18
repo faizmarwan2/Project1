@@ -1,0 +1,314 @@
+{
+  "generated_at": "2026-11-18T14:24:18+07:00",
+  "root": "C:\\Users\\rayha\\Documents\\Data Kerja\\Ethes Tech - Maganghub\\Project A - [17-19 November 2026]\\Project1",
+  "sources": [
+    {
+      "path": ".env.example",
+      "bytes": 196,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "563408a1e78ce00c4c7f8869bbc239922e18d5bf790c19a55b871d94a5d18cc3"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3862,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "77ac4e5d00a6589e50d29c5716f442f0e68ec5a784190f2215f61a284ed743ed"
+    },
+    {
+      "path": "docs/ETHES_TECH Project.docx",
+      "bytes": 1596106,
+      "mtime": "2026-11-17T18:33:55+07:00",
+      "sha256": "9d33f894e872b870fef7161968c3bc9e24c26a071e490af35577653ffd142ba8"
+    },
+    {
+      "path": "package.json",
+      "bytes": 488,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "5e27da093129343b9541fa3eb25262bfcdc6064b1d79a1be72b47d036c672744"
+    },
+    {
+      "path": "public/.htaccess",
+      "bytes": 603,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "42493ebc7bad9b95a90363cae9d46ca9934f2d5b4177088d7a08371d5a2623c7"
+    },
+    {
+      "path": "public/app.css",
+      "bytes": 8755,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "7cd59d36225cb9959451b276f0f6a9dc726eee6be52d33e67fc79c227c1acfbb"
+    },
+    {
+      "path": "public/app.js",
+      "bytes": 30967,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "63bd2972a0ff7c10b73c283ba9f7293d3371a29564b39f1f74ea6a728dd626f8"
+    },
+    {
+      "path": "public/favicon.ico",
+      "bytes": 0,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "public/index.html",
+      "bytes": 553,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "8b41740a311fe1d2c55a825c61a362ec1a36206295e43773e07ae0256a201833"
+    },
+    {
+      "path": "public/index.php",
+      "bytes": 1710,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "c96ed6bbe80f9105534af4d1510dc79f0143e6843970dba7ddd4ec7d03097cab"
+    },
+    {
+      "path": "public/robots.txt",
+      "bytes": 24,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "e5c4b84484ee4216e9373be99380320c25dd94805f99f0a805846f087636553f"
+    },
+    {
+      "path": "src/app.js",
+      "bytes": 1389,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "38c5c8324ebc17fc213095641377ff3a3cba8b3e486629854368172fc3f8f18b"
+    },
+    {
+      "path": "src/config.js",
+      "bytes": 929,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "be2f7bf9e388d4ecd7d59500c0a036cfd9404f904e7b711a0f30f766674d49f7"
+    },
+    {
+      "path": "src/db.js",
+      "bytes": 3996,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "23d7f397886285d1448ed48ce82da8a83bf98c09c77c144c7c789d443ff55f18"
+    },
+    {
+      "path": "src/middleware/auth.js",
+      "bytes": 1010,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "f99c6119a4a439f9ba4b77b707b3f3207f397b4ae1c781683cd8a9908f696e66"
+    },
+    {
+      "path": "src/middleware/upload.js",
+      "bytes": 914,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "91dc8dadd9b7068a579cac75b9246081fc783bc9fd9fe3a6654a5c2d23e001be"
+    },
+    {
+      "path": "src/routes/admins.js",
+      "bytes": 2829,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "846eea2a716f770ce9a7543d0b8a2c212a2c05ddc81862901210d862e5ecbc14"
+    },
+    {
+      "path": "src/routes/attendance.js",
+      "bytes": 9755,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "320615fd4315f2fe904c044085d3b01720013ba9a1334418d8424e7eb0d50cce"
+    },
+    {
+      "path": "src/routes/auth.js",
+      "bytes": 1621,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "7361a1ca8a013914fed2ace0705ca6e80bbd6adf98dbcd5f449c01f2e3088928"
+    },
+    {
+      "path": "src/routes/dashboard.js",
+      "bytes": 2200,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "4bb799ccb3b92f04c6438cc428a01a44a69fc3850ea70db28c6fb91949ef9baf"
+    },
+    {
+      "path": "src/routes/employees.js",
+      "bytes": 7667,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "9d67820c5b63c9cedc7dad1df5595003190046a2fda74e6771d18ebfb19508d0"
+    },
+    {
+      "path": "src/routes/offices.js",
+      "bytes": 2101,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "b7f6f6738f6316985ffa4a508f744a9ad15e0d7b27bdb421c67f54d0fb14af21"
+    },
+    {
+      "path": "src/seed.js",
+      "bytes": 1004,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "8c377d9e08e00a5ca2e0cbc1684525ba32f910524bf736b45f9326920dd52240"
+    },
+    {
+      "path": "src/server.js",
+      "bytes": 175,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "432ed524445de667050134f3c4b404d1c7c26bbfebcaf35998925b4fc39ffe63"
+    },
+    {
+      "path": "src/utils/filters.js",
+      "bytes": 1256,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "76d48350c2754b6c0285287debf4502e401b85b4c1282bbf593da91e094ccdfb"
+    },
+    {
+      "path": "src/utils/geo.js",
+      "bytes": 520,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "344ca3e29f33ebf31ce5041a5b686e73c777a5c4b1ccc56c2a30542da55cdb1d"
+    },
+    {
+      "path": "src/utils/hr-code.js",
+      "bytes": 228,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "9f35c0b4512039ad6ab59edf702c7c135312937f4038a6735573a13be749ebe1"
+    },
+    {
+      "path": "src/utils/http.js",
+      "bytes": 297,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "6da325a526b97feb961a46eec1d31ac4cb46c04030726d9e93c53d371e819063"
+    },
+    {
+      "path": "src/utils/time.js",
+      "bytes": 2312,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "5d7e90114cfcfe64134418e19a4ebd2e474d56a7244b70712ec79475e01e183b"
+    },
+    {
+      "path": "test/attendance.test.js",
+      "bytes": 9661,
+      "mtime": "2026-11-18T11:23:26+07:00",
+      "sha256": "384194a4a1e804424f0249b88f4ebbe85cb63eccb71e8412155eb6f44881b63a"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/project-a/01-SRS.md",
+      "bytes": 29662,
+      "mtime": "2026-11-18T14:11:19+07:00",
+      "sha256": "e0c6327ba6546a13a7a7082907d29fa6504e5ded5212a98a5de4fe7f12a51a2a"
+    },
+    {
+      "path": "docs/project-a/02-Use-Case-Diagram.md",
+      "bytes": 22292,
+      "mtime": "2026-11-18T14:14:00+07:00",
+      "sha256": "4ef85743049747de95999c3f31c3a44a975b6db7167b3d6abcaf9f33dbe09588"
+    },
+    {
+      "path": "docs/project-a/03-Activity-Diagram.md",
+      "bytes": 17048,
+      "mtime": "2026-11-18T14:14:11+07:00",
+      "sha256": "c651b6cacc720057640a04e5bc6eea13bf7f651a42e4204b4f75c28ab0c374ec"
+    },
+    {
+      "path": "docs/project-a/04-ERD.md",
+      "bytes": 13259,
+      "mtime": "2026-11-18T13:34:28+07:00",
+      "sha256": "f4f3f9ab6ad0bb4f7a63a0ae0cb7ad6e3e07f0deee1bc33993cab23423762a27"
+    },
+    {
+      "path": "docs/project-a/05-Flowchart.md",
+      "bytes": 14053,
+      "mtime": "2026-11-18T13:34:54+07:00",
+      "sha256": "2f70d01eaaf5620ad893faf27727c435bf838dac39e7cdcf4b1ffd97e8926b30"
+    },
+    {
+      "path": "docs/project-a/06-Functional-Requirement.md",
+      "bytes": 19179,
+      "mtime": "2026-11-18T14:11:33+07:00",
+      "sha256": "3cff8f77b6de57fd105e88cd292472e05ffd7272bf6b5d8a6ae9f78d41d2506a"
+    },
+    {
+      "path": "docs/project-a/07-User-Story.md",
+      "bytes": 27201,
+      "mtime": "2026-11-18T13:39:06+07:00",
+      "sha256": "97423a73c309a9f6c2811ff65293aff90104312fba3247439a0c36fc62f0a1bd"
+    },
+    {
+      "path": "docs/project-a/08-Business-Process-Documentation.md",
+      "bytes": 18834,
+      "mtime": "2026-11-18T13:37:16+07:00",
+      "sha256": "817a78399d28ebc900c070c1a28b233be7983de8edd6b0041b65807f1586891b"
+    },
+    {
+      "path": "docs/project-a/09-Test-Plan.md",
+      "bytes": 12303,
+      "mtime": "2026-11-18T14:12:23+07:00",
+      "sha256": "889dd9b60cce539843c99b625868995d3e1f77c3abddf3e26ab6a7a94dff0892"
+    },
+    {
+      "path": "docs/project-a/10-Test-Case.md",
+      "bytes": 18742,
+      "mtime": "2026-11-18T13:45:27+07:00",
+      "sha256": "e10165c9e431d6aac10b8bbc8a202d4fa98bf42ed2539ead2fb4bfbb3def4b59"
+    },
+    {
+      "path": "docs/project-a/11-UAT.md",
+      "bytes": 10489,
+      "mtime": "2026-11-18T13:47:31+07:00",
+      "sha256": "37202332db9b4f13ec63693741abd180f42a929fb498dcdddc347c21558f93b2"
+    },
+    {
+      "path": "docs/project-a/12-Traceability-Matrix.md",
+      "bytes": 10041,
+      "mtime": "2026-11-18T13:47:17+07:00",
+      "sha256": "e6fbfdb95110e73aaae35ca43fbfd19a60a022ab897ebdbc8593b5a6b399f587"
+    },
+    {
+      "path": "docs/project-a/13-Defect-Management.md",
+      "bytes": 10616,
+      "mtime": "2026-11-18T14:12:47+07:00",
+      "sha256": "3222ff137716ab54dce6b18bf64203e45cd5054f2b601d9078bacbbe24fef565"
+    },
+    {
+      "path": "docs/project-a/14-Risk-Register.md",
+      "bytes": 12480,
+      "mtime": "2026-11-18T14:06:48+07:00",
+      "sha256": "a8621322b6eba3aa041431ee58f5b5c5126624ca462f91d2e99254b9b4a42a0e"
+    },
+    {
+      "path": "docs/project-a/15-Change-Request-Log.md",
+      "bytes": 7644,
+      "mtime": "2026-11-18T14:07:10+07:00",
+      "sha256": "3f6a1b4d344293aab50d04694fc53b475e11e3d0cbe0f1dc9fbf7209cf1c9779"
+    },
+    {
+      "path": "docs/project-a/16-Security-Test-Checklist.md",
+      "bytes": 14882,
+      "mtime": "2026-11-18T14:08:29+07:00",
+      "sha256": "558fdec2b854149144615a4805f8178435dd575a20a5df54fa4a9c9e739a1fea"
+    },
+    {
+      "path": "docs/project-a/17-Test-Automation.md",
+      "bytes": 14142,
+      "mtime": "2026-11-18T14:09:07+07:00",
+      "sha256": "551a9235ccf131cdb3b223bbbe39b9c2555519acf0c99b758b7f0d8da6d436aa"
+    },
+    {
+      "path": "docs/project-a/18-Test-Summary-Report.md",
+      "bytes": 7415,
+      "mtime": "2026-11-18T14:09:50+07:00",
+      "sha256": "b9ca684b8ab228acf1a4db17c9b09f1226a75808fd5edc5dbed87a386ea83e81"
+    },
+    {
+      "path": "docs/project-a/19-Glossary.md",
+      "bytes": 12502,
+      "mtime": "2026-11-18T14:11:11+07:00",
+      "sha256": "5f0610db0d26c8f3b747c28a4a0291481030f1be8c2436f9b0e1eb4f813ad1ed"
+    },
+    {
+      "path": "docs/project-a/README.md",
+      "bytes": 11860,
+      "mtime": "2026-11-18T14:23:58+07:00",
+      "sha256": "4bbd0cb4b947f32f6974013a8ec6212f51eb4746a26312c7090b68ca828384dd"
+    },
+    {
+      "path": "docs/project-a/TASK.md",
+      "bytes": 18137,
+      "mtime": "2026-11-18T14:16:42+07:00",
+      "sha256": "abab909098fe3c22447f909d0fa8c921b3005faec16497dd1ad950035e30aee2"
+    }
+  ]
+}
