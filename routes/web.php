@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+Route::get('/health', fn() => response()->json(['ok' => true]));
+Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+
 Route::get('/', function () {
     $indexPath = public_path('index.html');
     if (File::exists($indexPath)) {

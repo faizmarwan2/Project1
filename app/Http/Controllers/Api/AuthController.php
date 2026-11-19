@@ -21,6 +21,13 @@ class AuthController extends Controller
 
     public function login(Request $request): JsonResponse
     {
+        \Illuminate\Support\Facades\Log::info('LOGIN ATTEMPT', [
+            'ip' => $request->ip(),
+            'inputs' => $request->except(['password']),
+            'has_password' => $request->filled('password'),
+            'content_type' => $request->header('Content-Type'),
+        ]);
+
         $email = $request->input('email');
         $password = $request->input('password');
 
