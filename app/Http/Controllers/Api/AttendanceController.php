@@ -176,7 +176,7 @@ class AttendanceController extends Controller
             if (File::exists($photoPath)) {
                 File::delete($photoPath);
             }
-            if (stripos($e->getMessage(), 'unique') !== false) {
+            if (stripos($e->getMessage(), 'duplicate') !== false || stripos($e->getMessage(), 'unique') !== false) {
                 throw new ApiException(409, 'Anda sudah IN hari ini', 'ALREADY_CHECKED_IN');
             }
             throw $e;

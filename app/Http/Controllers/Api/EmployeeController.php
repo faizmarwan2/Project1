@@ -40,10 +40,15 @@ class EmployeeController extends Controller
 
     private static function generateCode(): string
     {
-        $seqRow = DB::selectOne("SELECT seq FROM sqlite_sequence WHERE name = 'employees'");
-        $seq = $seqRow ? (int)$seqRow->seq : 0;
+        // `AUTO_INCREMENT` pada tabel kosong bernilai 1, jadi id terakhir yang
+        // pernah dipakai adalah nilainya dikurangi satu.
+        $seqRow = DB::selectOne(
+            "SELECT AUTO_INCREMENT AS n FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'employees'"
+        );
+        $seq = $seqRow ? max(0, (int)$seqRow->n - 1) : 0;
 
-        $r = DB::selectOne("SELECT MAX(CAST(SUBSTR(employee_code, 3) AS INTEGER)) as n FROM employees WHERE LOWER(employee_code) GLOB 'ky[0-9]*'");
+        $r = DB::selectOne("SELECT MAX(CAST(SUBSTRING(employee_code, 3) AS UNSIGNED)) AS n FROM employees WHERE employee_code REGEXP '^ky[0-9]+$'");
         $n = $r ? (int)$r->n : 0;
 
         $nextNum = max($seq, $n) + 1;

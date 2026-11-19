@@ -2,10 +2,23 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class WorkforceAttendanceTest extends TestCase
 {
+    use RefreshDatabase;
+
+    /**
+     * Skema + data awal dibuat ulang pada database tes MySQL
+     * (`workforce_attendance_test`) sebelum setiap tes, lalu di-rollback.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed();
+    }
+
     public function test_health_check(): void
     {
         $response = $this->getJson('/api/health');
