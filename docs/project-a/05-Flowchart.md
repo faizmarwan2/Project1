@@ -6,7 +6,7 @@
 | Versi | 2.1 (perbaikan tata letak) |
 | Tanggal | 18 November 2026 |
 | Jumlah Flowchart | 11 (FC-01 … FC-11) |
-| Sumber logika | `src/app.js`, `src/middleware/*`, `src/routes/*`, `src/utils/*`, `public/app.js` |
+| Sumber logika | `app/Http/Kernel.php` + `routes/api.php`, `app/Http/Middleware/*`, `app/Http/Controllers/Api/*`, `app/Services/*`, `public/app.js` |
 | Invarian | **Tidak ada jalur sukses tanpa login** (`TASK.md` I-01) dan **tidak ada sukses palsu** (ATT-08) |
 | Konvensi gambar | Satu arah baca; cabang gagal berakhir di node merah dan tidak ditarik kembali ke jalur utama |
 
@@ -27,7 +27,7 @@ flowchart TD
     ROLE -- "HR" --> HRHUB["Menu Web HR<br/>dashboard · absensi · karyawan<br/>akun HR · office"]
     ROLE -- "EMPLOYEE" --> EMPHUB["Menu Employee<br/>status hari ini · check-in<br/>check-out · riwayat"]
 
-    HRHUB --> API["API Express<br/>auth + requireRole"]
+    HRHUB --> API["API Laravel<br/>jwt.auth + role"]
     EMPHUB --> API
     API --> DB[("SQLite<br/>5 tabel")]
     API -. "401 / 403" .-> X["Permintaan ditolak<br/>klien kembali ke Login"]:::err
@@ -54,9 +54,9 @@ flowchart TD
     V -- "ya" --> U{"User dengan sub itu<br/>masih ada?"}:::gate
     U -- "tidak" --> E3["401 UNAUTHORIZED<br/>user tidak ditemukan"]:::err
     U -- "ya" --> SET["req.user = id, employee_id,<br/>name, account_code, email, role"]
-    SET --> R{"Route memakai<br/>requireRole?"}:::gate
+    SET --> R{"Route memakai<br/>middleware role?"}:::gate
     R -- "tidak" --> NEXT["Lanjut ke handler"]
-    R -- "ya" --> RC{"role sesuai?"}:::gate
+    R -- "ya" --> RC{"peran sesuai?"}:::gate
     RC -- "tidak" --> E4["403 FORBIDDEN"]:::err
     RC -- "ya" --> NEXT
     NEXT --> RES(["200 atau 4xx dari handler"]):::ok
@@ -67,7 +67,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/middleware/auth.js:7-22`, `src/app.js:13-18`.
+**Rujukan:** `app/Http/Middleware/JwtAuth.php` + `app/Http/Middleware/RequireRole.php`, `routes/api.php:18`.
 
 ---
 
@@ -98,23 +98,23 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    A(["POST check-in / check-out"]):::start --> B{"auth: token valid?"}:::gate
+    A(["POST check-in / check-out"]):::start --> B{"jwt.auth: token valid?"}:::gate
     B -- "tidak" --> X1["401 UNAUTHORIZED"]:::err
-    B -- "ya" --> C{"requireRole EMPLOYEE?"}:::gate
+    B -- "ya" --> C{"role:EMPLOYEE?"}:::gate
     C -- "tidak" --> X2["403 FORBIDDEN"]:::err
-    C -- "ya" --> D{"multer: berkas valid?<br/>JPEG/PNG/WEBP <= 5 MB"}:::gate
-    D -- "tidak" --> X3["400 INVALID_PHOTO"]:::err
-    D -- "ya" --> E{"Karyawan ACTIVE?"}:::gate
+    C -- "ya" --> E{"Karyawan ACTIVE?"}:::gate
     E -- "tidak" --> X4["403 ACCOUNT_INACTIVE"]:::err
     E -- "ya" --> F{"State absensi<br/>hari ini valid?"}:::gate
     F -- "tidak" --> X5["409 ALREADY_CHECKED_IN /<br/>NOT_CHECKED_IN /<br/>ALREADY_CHECKED_OUT"]:::err
-    F -- "ya" --> G{"Foto & koordinat valid?"}:::gate
-    G -- "foto tidak ada" --> X6["400 PHOTO_REQUIRED"]:::err
-    G -- "koordinat salah" --> X7["400 GPS_REQUIRED"]:::err
-    G -- "ya" --> H{"Office aktif &<br/>dalam radius?"}:::gate
+    F -- "ya" --> G{"Foto wajib &<br/>JPEG/PNG/WEBP ≤ 5 MB?"}:::gate
+    G -- "tidak ada" --> X6["400 PHOTO_REQUIRED"]:::err
+    G -- "tipe/ukuran salah" --> X3["400 INVALID_PHOTO"]:::err
+    G -- "ya" --> G2{"Koordinat GPS valid?"}:::gate
+    G2 -- "tidak" --> X7["400 GPS_REQUIRED"]:::err
+    G2 -- "ya" --> H{"Office aktif &<br/>dalam radius?"}:::gate
     H -- "tidak ada office" --> X8["409 NO_OFFICE"]:::err
     H -- "di luar radius" --> X9["403 OUTSIDE_RADIUS<br/>+ distance_m, radius_m"]:::err
-    H -- "ya" --> I["INSERT / UPDATE<br/>dengan guard"]
+    H -- "ya" --> I["INSERT / UPDATE<br/>+ simpan foto"]
     I --> J{"Constraint / changes?"}:::gate
     J -- "gagal" --> X10["409 konflik"]:::err
     J -- "sukses" --> K(["201 / 200 + data absensi"]):::ok
@@ -125,7 +125,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Catatan:** bila handler melempar error setelah foto terunggah, `withUpload` menghapus berkas tersebut (`attendance.js:46-52`), sehingga tidak ada foto yatim.
+**Catatan:** validasi foto/GPS berjalan **setelah** cek state absensi (baris 155-159), dan foto baru ditulis ke `uploads/attendance/` setelah semua validasi lolos (baris 100-111). Akibatnya tidak ada foto yatim: bila validasi/penyimpanan gagal, berkas belum dibuat.
 
 ---
 
@@ -159,7 +159,7 @@ flowchart TD
 | 08:16 | `TERLAMBAT` |
 | 09:30 | `TERLAMBAT` |
 
-**Rujukan:** `src/config.js:22-23`, `src/utils/time.js:10-20`.
+**Rujukan:** `app/Services/TimeService.php:11-12`, `app/Services/TimeService.php:24-48`.
 
 ---
 
@@ -193,7 +193,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Preset yang sah:** `today`, `yesterday`, `this_week`, `last7`, `last30`, `this_month`, `last_month` (`src/utils/time.js:31-51`).
+**Preset yang sah:** `today`, `yesterday`, `this_week`, `last7`, `last30`, `this_month`, `last_month` (`app/Services/TimeService.php:65-101`).
 
 ---
 
@@ -226,7 +226,7 @@ flowchart LR
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/attendance.js:112-134`.
+**Rujukan:** `app/Http/Controllers/Api/AttendanceController.php:240-353`.
 
 ---
 
@@ -250,7 +250,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/dashboard.js:13-38`.
+**Rujukan:** `app/Http/Controllers/Api/DashboardController.php:16-112`.
 
 ---
 
@@ -307,7 +307,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Bentuk respons error** (`src/app.js:28`):
+**Bentuk respons error** (`app/Exceptions/Handler.php:23-66`):
 
 ```json
 { "error": { "code": "OUTSIDE_RADIUS", "message": "Anda di luar radius office ...", "office": "Kantor Pusat", "distance_m": 1200, "radius_m": 100 } }

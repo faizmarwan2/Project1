@@ -68,8 +68,8 @@ flowchart LR
 
 | Level | Apa yang diuji | Cara | Perkakas |
 |---|---|---|---|
-| **Unit** | `attendanceStatus`, `isDate`, `resolvePreset`, `distanceM`, `validCoord`, `dateRange` | Panggil fungsi langsung | `node --test`, `node -e` |
-| **Integrasi API** | Endpoint + middleware + DB + berkas | Request HTTP nyata | `npm test`, curl, Postman/Insomnia |
+| **Unit** | `TimeService::attendanceStatus`, `TimeService::isDate`, `TimeService::resolvePreset`, `GeoService::distanceM`, `GeoService::validCoord`, `resolveDateRange` | Panggil fungsi langsung | PHPUnit (`php artisan test`), `php artisan tinker` |
+| **Integrasi API** | Endpoint + middleware + DB + berkas | Request HTTP nyata | `php artisan test`, curl, Postman/Insomnia |
 | **End-to-end Web** | Login, navigasi, CRUD, filter, tampilan | Manual di browser | Chrome/Edge |
 | **UAT** | Skenario bisnis end-to-end | Manual bersama mentor | `11-UAT.md` |
 
@@ -84,9 +84,9 @@ flowchart LR
 | Komponen | Nilai | Catatan |
 |---|---|---|
 | OS | Windows 10/11 | Lingkungan pengembang saat ini |
-| Runtime | Node.js **≥ 22.13** | Wajib; `node:sqlite` butuh versi ini |
-| DB | SQLite via `node:sqlite` | `DB_PATH` terpisah untuk tes |
-| Port | `3000` (default) | Dapat diubah lewat `PORT` |
+| Runtime | PHP **≥ 8.1** dengan `pdo_sqlite`, `mbstring`, `openssl` | Laravel 10; verifikasi memakai PHP 8.5.12 |
+| DB | SQLite (`DB_CONNECTION=sqlite`, `DB_DATABASE`) | Berkas terpisah untuk tes |
+| Port | `8000` (default `artisan serve`) | Dapat diubah lewat `--port` |
 | Browser | Chrome/Edge terbaru | Web HR tanpa build |
 | Klien API | curl / Postman / Insomnia | Untuk alur Employee |
 | Perangkat GPS | Ponsel atau mock location | Untuk uji radius |
@@ -94,36 +94,41 @@ flowchart LR
 
 ### 4.2 Konfigurasi Terisolasi
 
-> **Status blocker (18 Nov 2026):** Node v20.18.0 memang gagal (`ERR_UNKNOWN_BUILTIN_MODULE`), sehingga mesin tes memakai **Node v22.23.2**. Dengan versi itu server berjalan dan seluruh 61 TC selesai dieksekusi. Bila mengulang siklus, pakai Node 22.13+ dan arahkan `DB_PATH`/`UPLOAD_DIR` ke folder terpisah (lihat langkah di bawah). Rincian: `14-Risk-Register.md` RISK-01.
+> **Catatan siklus (18 Nov 2026):** eksekusi penuh 61 TC dilakukan terhadap implementasi Node yang kini sudah dihapus (lihat `README.md` §Satu Implementasi). Untuk mengulang siklus pada implementasi Laravel, siapkan `vendor/`, `.env`, dan database terpisah seperti di bawah, lalu jalankan `php artisan test` sebelum menguji manual. Rincian risiko reproduksi: `14-Risk-Register.md` RISK-01.
 
 ```bash
-# 0. Pastikan runtime memenuhi syarat (harus >= 22.13)
-node --version
-node -e "require('node:sqlite'); console.log('sqlite siap')"
+# 0. Pastikan runtime memenuhi syarat (PHP >= 8.1, ekstensi pdo_sqlite)
+php --version
+php -m | findstr pdo_sqlite
 
 # 1. Siapkan environment
+composer install
 cp .env.example .env
+php artisan key:generate
 #    ubah JWT_SECRET menjadi nilai acak panjang
 #    ganti HR_PASSWORD; JANGAN memakai kredensial contoh untuk demo publik
 
-# 2. Jalankan dengan DB & folder upload khusus tes
-DB_PATH=./data/qa.db UPLOAD_DIR=./uploads-qa PORT=3100 npm start
+# 2. Siapkan database terpisah untuk tes (jangan pakai database demo)
+#    set DB_DATABASE ke berkas khusus tes di .env, lalu:
+php artisan migrate --force
+php artisan db:seed --force
+php artisan serve --port=8010
 
 # 3. Bersihkan sebelum siklus baru (Windows PowerShell)
-Remove-Item -Force .\data\qa.db* -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force .\uploads-qa -ErrorAction SilentlyContinue
+Remove-Item -Force .\database\qa-test.sqlite -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force .\uploads -ErrorAction SilentlyContinue
 ```
 
 **Aturan:** setiap siklus tes dimulai dari database bersih agar hitungan `belum_in`, `sudah_in`, dan penomoran `kyNN`/`HRNN` dapat diprediksi.
 
-**Catatan titik masuk:** repo memuat dua implementasi (D-10/D-12) — Node `src/` yang diuji di sini, dan Laravel `app/` + `routes/api.php` (commit `3ee2b7a`) yang belum diuji. Untuk Project A gunakan `npm start` (`src/server.js`); `php artisan serve` memerlukan `vendor/` yang tidak tersedia.
+**Catatan titik masuk:** repo kini hanya memuat implementasi Laravel (D-10/D-12, GAP-09 ditutup). Titik masuk uji adalah `php artisan serve` → `http://127.0.0.1:8000`; `vendor/` tidak di-commit sehingga `composer install` wajib dijalankan lebih dulu.
 
 ### 4.3 Data Awal (Seed)
 
 | Data | Nilai | Sumber |
 |---|---|---|
-| Akun HR | `HR_EMAIL` / `HR_PASSWORD` dari `.env` | `src/seed.js:6-11` |
-| Office | `Kantor Pusat`, koordinat seed, radius 100 m | `src/seed.js:12-17` |
+| Akun HR | `HR_EMAIL` / `HR_PASSWORD` dari `.env` | `database/seeders/HrSeeder.php:18-34` |
+| Office | `Kantor Pusat`, koordinat seed, radius 100 m | `database/seeders/OfficeSeeder.php:17-31` |
 | Karyawan | Dibuat selama tes | `POST /api/employees` |
 
 > Kredensial tidak ditulis di dokumen ini. Nilainya diambil dari `.env` lokal penguji.
@@ -150,9 +155,10 @@ Remove-Item -Recurse -Force .\uploads-qa -ErrorAction SilentlyContinue
 
 ### 6.1 Entry Criteria
 
-- [ ] `node --version` ≥ **22.13** dan `require('node:sqlite')` berhasil.
-- [ ] `.env` dibuat dari `.env.example`; `JWT_SECRET` acak, `HR_PASSWORD` sudah diganti.
-- [ ] `npm install` selesai tanpa error.
+- [ ] `php --version` ≥ **8.1** dan ekstensi `pdo_sqlite` aktif.
+- [ ] `.env` dibuat dari `.env.example`; `APP_KEY` dibuat, `JWT_SECRET` acak, `HR_PASSWORD` sudah diganti.
+- [ ] `composer install` selesai tanpa error.
+- [ ] `php artisan migrate` + `php artisan db:seed` berhasil pada database bersih.
 - [ ] Server berjalan dan `GET /health` mengembalikan `{ "ok": true }`.
 - [ ] Database bersih; seed HR + office terbentuk.
 - [ ] Dokumen `01-SRS.md` dan `06-Functional-Requirement.md` tersedia sebagai acuan.
@@ -265,7 +271,7 @@ Catatan    : ...
 
 ### 12.2 Non-fungsional
 
-- [ ] `npm test` dijalankan dan hasilnya dicatat.
+- [ ] `php artisan test` dijalankan dan hasilnya dicatat.
 - [ ] Tidak ada kredensial asli tertulis di dokumen/laporan.
 - [ ] Tidak ada error 500 yang tidak terjelaskan selama pengujian.
 - [ ] Data uji tidak bercampur dengan data demo.

@@ -10,8 +10,9 @@
 | Metode | Tinjauan kode statis + **eksekusi nyata** (18 November 2026) |
 | Hasil | **37 Lulus**, **6 Gagal**, **1 Belum** dari 44 pemeriksaan (`*.json` pada folder bukti) |
 | Acuan | `01-SRS.md` §0, `06-Functional-Requirement.md`, `TASK.md` I-01/I-04/I-05/I-07 |
+| Verifikasi ulang | 19 Nov 2026 pada implementasi **Laravel** untuk 5 pemeriksaan yang perilakunya berubah (§13) |
 
-> **Pernyataan jujur:** status di bawah berasal dari eksekusi nyata terhadap server lokal (Node v22.23.2, database QA terpisah) pada 18 November 2026, bukan dari asumsi. Baris yang tidak dapat dieksekusi tetap `Belum` beserta alasannya. Enam `Gagal` dijelaskan di §10.1 dan **tidak** dinilai sebagai kebocoran data — semuanya soal konfigurasi/kebiasaan operasional (log kredensial, secret cadangan, tanpa rate limit, tanpa header keamanan, kode error body besar).
+> **Pernyataan jujur:** status di bawah berasal dari eksekusi nyata terhadap server lokal (Node v22.23.2, database QA terpisah) pada 18 November 2026, bukan dari asumsi. Implementasi Node itu kini sudah dihapus; angka 37/6/1 adalah **rekaman siklus tersebut**. Pemeriksaan yang perilakunya berbeda di Laravel diuji ulang dan dicatat di §13 — jangan mengutip angka §10.1 seolah-olah hasil Laravel. Baris yang tidak dapat dieksekusi tetap `Belum` beserta alasannya.
 
 ---
 
@@ -42,7 +43,7 @@ flowchart LR
     end
 
     subgraph API["Lapisan API"]
-        MW["auth + requireRole"]
+        MW["jwt.auth + role"]
         R1["routes: employees, admins,<br/>dashboard (HR saja)"]
         R2["routes: offices, attendance<br/>(login + peran)"]
     end
@@ -60,7 +61,7 @@ flowchart LR
     MW -->|"role sesuai"| R2
     R1 --> DB
     R2 --> DB
-    R2 -->|"sendFile setelah cek pemilik"| FS
+    R2 -->|"response()->file setelah cek pemilik"| FS
 
     classDef danger fill:#fee,stroke:#c00
     class ANON danger
@@ -90,16 +91,16 @@ Aturan:
 
 | ID | Pemeriksaan | Langkah | Harapan | Rujukan | Hasil |
 |---|---|---|---|---|---|
-| ST-01 | Semua endpoint terproteksi menolak tanpa token | Tanpa header, panggil seluruh endpoint selain `POST /api/login` dan `GET /health` | Semua `401 UNAUTHORIZED`; tidak ada data | `middleware/auth.js:10` | Lulus — `/api/me`, `/api/attendance`, `/api/attendance/today`, `/api/dashboard/attendance`, `/api/employees`, foto absensi tanpa token: seluruhnya `401 UNAUTHORIZED` |
-| ST-02 | Header bukan format Bearer | Kirim `Authorization: Basic xyz`, `Bearer`, `Token abc` | `401 UNAUTHORIZED` | `auth.js:9-10` | Lulus — `Basic eHl6`, `Bearer` kosong, `Token abc`, `Bearer` + spasi: semuanya `401 UNAUTHORIZED` |
-| ST-03 | Token acak | `Bearer abc.def.ghi` | `401 UNAUTHORIZED` | `auth.js:12-13` | Lulus — `Bearer abc.def.ghi` → `401 UNAUTHORIZED` |
-| ST-04 | Token kedaluwarsa | Buat token `exp` lampau, pakai ke `/api/me` | `401 UNAUTHORIZED` | `auth.js:12-13` | Lulus — token `exp` lampau → `401 UNAUTHORIZED` |
-| ST-05 | Token milik user yang sudah dihapus | Hapus karyawan, pakai token lamanya | `401 UNAUTHORIZED` (bukan 200) | `auth.js:15-16` | Lulus — karyawan dihapus → token lamanya `401` pada `/api/me` dan `/api/attendance/today` |
-| ST-06 | Token dengan `sub` tidak ada | Tanda tangan token `sub=999999` dengan secret uji | `401 UNAUTHORIZED` | `auth.js:15-16` | Lulus — token `sub=999999` bertanda tangan sah → `401 UNAUTHORIZED` |
-| ST-07 | Hanya `POST /api/login` yang publik | Panggil `GET /api/login` | `404 NOT_FOUND`, bukan data | `app.js:13` | Lulus — `GET`/`PUT /api/login` → `404 NOT_FOUND` |
-| ST-08 | `/health` publik tetapi minim informasi | `GET /health` | `{ "ok": true }` saja; tanpa versi/stack | `app.js:12` | Lulus — `GET /health` → `{"ok":true}` tanpa versi/stack |
-| ST-09 | Aset statis tanpa data | Buka `/` tanpa token | Hanya kerangka UI + layar Login; tidak ada data absensi | `app.js:11`, `public/app.js` | Lulus — `/` menyajikan kerangka UI; tanpa token hanya layar Login, tidak ada data absensi |
-| ST-10 | Tidak ada endpoint "bocor" | Bandingkan daftar route di kode dengan `01-SRS.md` §6 | Jumlah & peran sama; tidak ada route rahasia | `src/routes/*.js` | Belum |
+| ST-01 | Semua endpoint terproteksi menolak tanpa token | Tanpa header, panggil seluruh endpoint selain `POST /api/login` dan `GET /health` | Semua `401 UNAUTHORIZED`; tidak ada data | `app/Http/Middleware/JwtAuth.php:23-25` | Lulus — `/api/me`, `/api/attendance`, `/api/attendance/today`, `/api/dashboard/attendance`, `/api/employees`, foto absensi tanpa token: seluruhnya `401 UNAUTHORIZED` |
+| ST-02 | Header bukan format Bearer | Kirim `Authorization: Basic xyz`, `Bearer`, `Token abc` | `401 UNAUTHORIZED` | `app/Http/Middleware/JwtAuth.php:22-25` | Lulus — `Basic eHl6`, `Bearer` kosong, `Token abc`, `Bearer` + spasi: semuanya `401 UNAUTHORIZED` |
+| ST-03 | Token acak | `Bearer abc.def.ghi` | `401 UNAUTHORIZED` | `app/Http/Middleware/JwtAuth.php:28-31` | Lulus — `Bearer abc.def.ghi` → `401 UNAUTHORIZED` |
+| ST-04 | Token kedaluwarsa | Buat token `exp` lampau, pakai ke `/api/me` | `401 UNAUTHORIZED` | `app/Http/Middleware/JwtAuth.php:28-31` | Lulus — token `exp` lampau → `401 UNAUTHORIZED` |
+| ST-05 | Token milik user yang sudah dihapus | Hapus karyawan, pakai token lamanya | `401 UNAUTHORIZED` (bukan 200) | `app/Http/Middleware/JwtAuth.php:33-36` | Lulus — karyawan dihapus → token lamanya `401` pada `/api/me` dan `/api/attendance/today` |
+| ST-06 | Token dengan `sub` tidak ada | Tanda tangan token `sub=999999` dengan secret uji | `401 UNAUTHORIZED` | `app/Http/Middleware/JwtAuth.php:33-36` | Lulus — token `sub=999999` bertanda tangan sah → `401 UNAUTHORIZED` |
+| ST-07 | Hanya `POST /api/login` yang publik | Panggil `GET /api/login` | `404 NOT_FOUND`, bukan data | `routes/api.php:15` | Lulus — `GET`/`PUT /api/login` → `404 NOT_FOUND` |
+| ST-08 | `/health` publik tetapi minim informasi | `GET /health` | `{ "ok": true }` saja; tanpa versi/stack | `routes/api.php:12` | Lulus — `GET /health` → `{"ok":true}` tanpa versi/stack |
+| ST-09 | Aset statis tanpa data | Buka `/` tanpa token | Hanya kerangka UI + layar Login; tidak ada data absensi | `routes/web.php:13-19`, `public/app.js` | Lulus — `/` menyajikan kerangka UI; tanpa token hanya layar Login, tidak ada data absensi |
+| ST-10 | Tidak ada endpoint "bocor" | Bandingkan daftar route di kode dengan `01-SRS.md` §6 | Jumlah & peran sama; tidak ada route rahasia | `routes/api.php` | Belum |
 
 ---
 
@@ -107,16 +108,16 @@ Aturan:
 
 | ID | Pemeriksaan | Langkah | Harapan | Rujukan | Hasil |
 |---|---|---|---|---|---|
-| ST-11 | Employee → endpoint HR | `GET/POST/PUT/DELETE /api/employees`, `/api/admins`, `/api/dashboard/attendance`, `GET /api/attendance` | Semua `403 FORBIDDEN` | `employees.js:11`, `admins.js:10`, `dashboard.js:7`, `attendance.js:152` | Lulus — 7 endpoint HR dengan token employee → `403 FORBIDDEN` semuanya |
-| ST-12 | Employee → tulis office | `POST`/`PUT /api/offices` | `403 FORBIDDEN` | `offices.js:27,34` | Lulus — employee `POST`/`PUT /api/offices` → `403 FORBIDDEN`, radius tidak berubah |
-| ST-13 | Employee → baca office | `GET /api/offices` | `200` (diperlukan untuk menampilkan radius) | `offices.js:7` | Lulus — employee `GET /api/offices` → `200` (hanya office aktif) |
-| ST-14 | HR → endpoint khusus Employee | `GET /api/attendance/today`, `POST check-in/check-out` | `403 FORBIDDEN` | `attendance.js:47,61` | Lulus — HR memanggil `/api/attendance/today` dan check-in → `403 FORBIDDEN` |
-| ST-15 | Employee membaca riwayat orang lain | `GET /api/attendance/history?employee_id=<orang lain>` | `403 FORBIDDEN` | `attendance.js:143-145` | Lulus — `?employee_id=<orang lain>` → `403 FORBIDDEN` tanpa data |
-| ST-16 | Employee tanpa `employee_id` di query | `GET /api/attendance/history` | Hanya data sendiri | `attendance.js:146` | Lulus — `/api/attendance/history` tanpa query → hanya baris milik pemilik token |
-| ST-17 | Employee membuka foto orang lain | `GET /api/attendance/<id orang lain>/photo/in` | `403 FORBIDDEN` | `attendance.js:158` | Lulus — foto milik karyawan lain → `403 FORBIDDEN` |
-| ST-18 | HR membuka foto siapa pun | `GET /api/attendance/<id>/photo/in` sebagai HR | `200` + gambar | `attendance.js:158` | Lulus — HR mengambil foto karyawan → `200` + `image/*` |
-| ST-19 | IDOR pada path parameter | Ganti `:id` menjadi ID milik orang lain di setiap endpoint | Tidak ada data terbaca tanpa hak | `attendance.js:156-158` | Lulus — IDOR di uji pada endpoint employee/absensi/foto: `403`/`404`, tidak ada data terbaca |
-| ST-20 | Eskalasi peran lewat body | `POST /api/employees` dengan `role:"HR"`; `PUT /api/employees/:id` dengan `role` | Field peran diabaikan; peran tidak berubah | `employees.js` | Lulus — `POST /api/employees` dengan `role:"HR"` → peran di DB tetap `EMPLOYEE` |
+| ST-11 | Employee → endpoint HR | `GET/POST/PUT/DELETE /api/employees`, `/api/admins`, `/api/dashboard/attendance`, `GET /api/attendance` | Semua `403 FORBIDDEN` | `routes/api.php:35`, `routes/api.php:29-32`, `routes/api.php:64-66`, `routes/api.php:60` | Lulus — 7 endpoint HR dengan token employee → `403 FORBIDDEN` semuanya |
+| ST-12 | Employee → tulis office | `POST`/`PUT /api/offices` | `403 FORBIDDEN` | `routes/api.php:23-26` | Lulus — employee `POST`/`PUT /api/offices` → `403 FORBIDDEN`, radius tidak berubah |
+| ST-13 | Employee → baca office | `GET /api/offices` | `200` (diperlukan untuk menampilkan radius) | `routes/api.php:22` | Lulus — employee `GET /api/offices` → `200` (hanya office aktif) |
+| ST-14 | HR → endpoint khusus Employee | `GET /api/attendance/today`, `POST check-in/check-out` | `403 FORBIDDEN` | `routes/api.php:47-51` | Lulus — HR memanggil `/api/attendance/today` dan check-in → `403 FORBIDDEN` |
+| ST-15 | Employee membaca riwayat orang lain | `GET /api/attendance/history?employee_id=<orang lain>` | `403 FORBIDDEN` | `app/Http/Controllers/Api/AttendanceController.php:368-374` | Lulus — `?employee_id=<orang lain>` → `403 FORBIDDEN` tanpa data |
+| ST-16 | Employee tanpa `employee_id` di query | `GET /api/attendance/history` | Hanya data sendiri | `app/Http/Controllers/Api/AttendanceController.php:373` | Lulus — `/api/attendance/history` tanpa query → hanya baris milik pemilik token |
+| ST-17 | Employee membuka foto orang lain | `GET /api/attendance/<id orang lain>/photo/in` | `403 FORBIDDEN` | `app/Http/Controllers/Api/AttendanceController.php:391-394` | Lulus — foto milik karyawan lain → `403 FORBIDDEN` |
+| ST-18 | HR membuka foto siapa pun | `GET /api/attendance/<id>/photo/in` sebagai HR | `200` + gambar | `app/Http/Controllers/Api/AttendanceController.php:391-394` | Lulus — HR mengambil foto karyawan → `200` + `image/*` |
+| ST-19 | IDOR pada path parameter | Ganti `:id` menjadi ID milik orang lain di setiap endpoint | Tidak ada data terbaca tanpa hak | `app/Http/Controllers/Api/AttendanceController.php:386-394` | Lulus — IDOR di uji pada endpoint employee/absensi/foto: `403`/`404`, tidak ada data terbaca |
+| ST-20 | Eskalasi peran lewat body | `POST /api/employees` dengan `role:"HR"`; `PUT /api/employees/:id` dengan `role` | Field peran diabaikan; peran tidak berubah | `app/Http/Controllers/Api/EmployeeController.php` | Lulus — `POST /api/employees` dengan `role:"HR"` → peran di DB tetap `EMPLOYEE` |
 
 ---
 
@@ -124,12 +125,12 @@ Aturan:
 
 | ID | Pemeriksaan | Langkah | Harapan | Rujukan | Hasil |
 |---|---|---|---|---|---|
-| ST-21 | Foto tidak dapat diakses lewat URL statis | `GET /uploads/attendance/<berkas>` dan `/uploads/<berkas>` | `404`; folder unggahan berada di luar `public/` | `app.js:11`, `config.js:16` | Lulus — `/uploads/attendance/<berkas>`, `/uploads/<berkas>`, dan path ber-`..` → `404` semua |
-| ST-22 | Token tidak muncul di respons selain login | Periksa semua respons; cari `token` | Hanya `POST /api/login` mengembalikan token | `auth.js:19` | Lulus — pemindaian 6 endpoint HR: tidak ada token pada body selain `POST /api/login` |
-| ST-23 | Token tidak tersimpan di server sebagai sesi | Periksa tabel `users`/DB | Tidak ada kolom token/sesi | `db.js` | Lulus — `PRAGMA table_info(users)` = id, employee_id, name, account_code, email, password_hash, role — tanpa kolom token/sesi |
+| ST-21 | Foto tidak dapat diakses lewat URL statis | `GET /uploads/attendance/<berkas>` dan `/uploads/<berkas>` | `404`; folder unggahan berada di luar `public/` | `routes/web.php:13-19`, `app/Http/Controllers/Api/AttendanceController.php:101` | Lulus — `/uploads/attendance/<berkas>`, `/uploads/<berkas>`, dan path ber-`..` → `404` semua |
+| ST-22 | Token tidak muncul di respons selain login | Periksa semua respons; cari `token` | Hanya `POST /api/login` mengembalikan token | `app/Http/Controllers/Api/AuthController.php:43-46` | Lulus — pemindaian 6 endpoint HR: tidak ada token pada body selain `POST /api/login` |
+| ST-23 | Token tidak tersimpan di server sebagai sesi | Periksa tabel `users`/DB | Tidak ada kolom token/sesi | `database/migrations/2014_10_12_000001_create_users_table.php` | Lulus — kolom `users` = id, employee_id, name, account_code, email, password_hash, role — tanpa kolom token/sesi |
 | ST-24 | Logout benar-benar mengakhiri akses di klien | Login, logout, lalu muat ulang | Kembali ke Login; tidak ada permintaan data tanpa token | `public/app.js` | Lulus — logout → Login; token dihapus; muat ulang tidak meminta data |
-| ST-25 | Token tidak tercatat di log | Jalankan alur, periksa output server | Tidak ada token utuh di log | `app.js:27` | Gagal — token tidak tercatat, tetapi `src/seed.js` mencetak email **dan password** HR ke stdout saat seeding (OBS-11) |
-| ST-26 | Masa berlaku token sesuai konfigurasi | Dekode `exp` − `iat` | 12 jam (default), bukan tak terbatas | `config.js:14` | Lulus — `exp − iat` = 43.200 detik (12 jam) |
+| ST-25 | Token tidak tercatat di log | Jalankan alur, periksa output server | Tidak ada token utuh di log | `app/Exceptions/Handler.php:52-64`, `database/seeders/HrSeeder.php:36-37` | Gagal (siklus Node) — seeder Node mencetak email **dan password** HR ke stdout (OBS-11). **Laravel 19 Nov:** seeder hanya mencetak email; tidak ada token/password di log → **Lulus** |
+| ST-26 | Masa berlaku token sesuai konfigurasi | Dekode `exp` − `iat` | 12 jam (default), bukan tak terbatas | `app/Services/JwtService.php:14` | Lulus — `exp − iat` = 43.200 detik (12 jam) |
 
 ---
 
@@ -137,12 +138,12 @@ Aturan:
 
 | ID | Pemeriksaan | Langkah | Harapan | Rujukan | Hasil |
 |---|---|---|---|---|---|
-| ST-27 | SQL injection pada pencarian | `?search=' OR 1=1--`, `%`, `_` | Diperlakukan sebagai teks; tidak ada 500; hasil wajar | `employees.js`, `utils/filters.js` | Lulus — `?search=%25%27 OR 1=1--` → `200` total 0 (diperlakukan sebagai teks) |
+| ST-27 | SQL injection pada pencarian | `?search=' OR 1=1--`, `%`, `_` | Diperlakukan sebagai teks; tidak ada 500; hasil wajar | `app/Http/Controllers/Api/EmployeeController.php`, `app/Http/Controllers/Api/AttendanceController.php:216-249` | Lulus — `?search=%25%27 OR 1=1--` → `200` total 0 (diperlakukan sebagai teks) |
 | ST-28 | SQL injection pada parameter angka | `?page=1;DROP`, `?employee_id=1 OR 1=1` | Ditolak/dinormalkan; tidak ada error 500 | route terkait | Lulus — `/api/employees/abc` → `404 NOT_FOUND`, tanpa stack trace |
 | ST-29 | XSS tersimpan pada nama karyawan | Buat karyawan bernama `<img src=x onerror=alert(1)>`, buka Web HR | Teks tampil sebagai teks, bukan dieksekusi | `public/app.js` | Lulus — nama `<img src=x onerror=...>` tampil sebagai teks; 0 elemen ter-inject |
 | ST-30 | XSS pada pesan error | Kirim input aneh, periksa pesan yang dirender | Pesan di-*escape* | `public/app.js` | Lulus — `errBox()` membungkus pesan dengan `esc()`; input berisi tag tidak dipantulkan |
-| ST-31 | Body JSON sangat besar | Kirim JSON > 100 KB | Ditolak 4xx dengan kode error yang konsisten (lihat OBS-05) | `app.js:9,23-28` | Gagal — body ~200 KB → `413` berkode `INTERNAL` (seharusnya kode validasi) — OBS-05 terbukti |
-| ST-32 | JSON rusak | Kirim body tidak valid | `400 VALIDATION` "JSON tidak valid" | `app.js:25` | Lulus — JSON rusak → `400 VALIDATION` "JSON tidak valid" |
+| ST-31 | Body JSON sangat besar | Kirim JSON > 100 KB | Ditolak 4xx dengan kode error yang konsisten (lihat OBS-05) | `app/Http/Kernel.php:41-44`, `app/Exceptions/Handler.php:52-64` | Gagal (siklus Node) — body ~200 KB → `413` berkode `INTERNAL` — OBS-05 terbukti. **Laravel 19 Nov:** body ~200 KB → `401 INVALID_CREDENTIALS` (diterima & divalidasi normal, bukan 413); hanya body > `post_max_size` (40 MB) yang ditolak di level PHP |
+| ST-32 | JSON rusak | Kirim body tidak valid | `400 VALIDATION` "JSON tidak valid" | `app/Exceptions/Handler.php:52-64` | Lulus — JSON rusak → `400 VALIDATION` (Laravel memakai pesan "Email dan password wajib diisi") |
 
 ---
 
@@ -151,11 +152,11 @@ Aturan:
 | ID | Pemeriksaan | Langkah | Harapan | Rujukan | Hasil |
 |---|---|---|---|---|---|
 | ST-33 | Unggah tanpa berkas | `POST check-in` tanpa `photo` | `400 PHOTO_REQUIRED` | `verifyGpsAndPhoto` | Lulus — tanpa `photo` → `400 PHOTO_REQUIRED` |
-| ST-34 | Berkas > 5 MB | Kirim 6 MB | `400 INVALID_PHOTO` "Foto maksimal 5 MB" | `upload.js:18`, `app.js:24` | Lulus — berkas 6 MB → `400 INVALID_PHOTO` "Foto maksimal 5 MB" |
-| ST-35 | Tipe tidak didukung | Kirim `.txt`, `.pdf`, `.svg` | `400 INVALID_PHOTO` | `upload.js:10,19` | Lulus — `text/plain` → `400 INVALID_PHOTO` |
-| ST-36 | Nama berkas berbahaya | Kirim `../../evil.png` | Disimpan dengan nama acak; path asli diabaikan | `upload.js:16` | Lulus — nama `../../evil.png` diabaikan; berkas tersimpan sebagai `<timestamp>-<hex>.jpg` di folder unggahan |
-| ST-37 | Berkas yatim saat ditolak | Hitung berkas sebelum/sesudah IN di luar radius | Jumlah tidak bertambah | `attendance.js:50` | Lulus — IN di luar radius: berkas sebelum = 13, sesudah = 13 |
-| ST-38 | Berkas tidak dapat dieksekusi | Unggah berkas berisi HTML/script dengan MIME gambar, lalu buka lewat endpoint foto | Disajikan sebagai gambar; script tidak berjalan | `attendance.js:161`, `upload.js:19` | Lulus — isi HTML dengan MIME `image/png` disajikan `content-type: image/png` sehingga tidak dieksekusi; `x-content-type-options` belum ada (BUG-01) |
+| ST-34 | Berkas > 5 MB | Kirim 6 MB | `400 INVALID_PHOTO` "Foto maksimal 5 MB" | `app/Http/Controllers/Api/AttendanceController.php:56-58` | Lulus — berkas 6 MB → `400 INVALID_PHOTO` |
+| ST-35 | Tipe tidak didukung | Kirim `.txt`, `.pdf`, `.svg` | `400 INVALID_PHOTO` | `app/Http/Controllers/Api/AttendanceController.php:50-54` | Lulus — ketiganya → `400 INVALID_PHOTO` "Foto harus JPEG/PNG/WEBP" |
+| ST-36 | Nama berkas berbahaya | Kirim `../../evil.png` | Disimpan dengan nama acak; path asli diabaikan | `app/Http/Controllers/Api/AttendanceController.php:106-107` | Lulus — nama `../../evil.png` diabaikan; berkas tersimpan sebagai `att_<Ymd_His>_<hex>.png` di folder unggahan |
+| ST-37 | Berkas yatim saat ditolak | Hitung berkas sebelum/sesudah IN di luar radius | Jumlah tidak bertambah | `app/Http/Controllers/Api/AttendanceController.php:100-111` | Lulus — validasi & simpan berurutan, berkas hanya ditulis setelah radius lolos; IN di luar radius tidak menambah berkas |
+| ST-38 | Berkas tidak dapat dieksekusi | Unggah berkas berisi HTML/script dengan MIME gambar, lalu buka lewat endpoint foto | Disajikan sebagai gambar; script tidak berjalan | `app/Http/Controllers/Api/AttendanceController.php:401-406`, `app/Http/Controllers/Api/AttendanceController.php:50-54` | Lulus — disajikan `content-type` dari berkas sehingga tidak dieksekusi; `x-content-type-options` belum ada (BUG-01) |
 
 ---
 
@@ -163,12 +164,12 @@ Aturan:
 
 | ID | Pemeriksaan | Langkah | Harapan | Rujukan | Hasil |
 |---|---|---|---|---|---|
-| ST-39 | Secret tidak memakai nilai cadangan | Periksa `JWT_SECRET` yang aktif | Berasal dari `.env`, panjang & acak; bukan nilai cadangan | `config.js:13` | Gagal — tanpa `.env`, `JWT_SECRET` memakai nilai cadangan yang diketahui — OBS-02 terbukti |
-| ST-40 | Kredensial HR bawaan tidak dipakai | Coba login dengan kredensial bawaan yang disebut README | Gagal setelah `.env` diisi password baru | `config.js:19`, `seed.js` | Gagal — akun HR bawaan (`HR_EMAIL`/`HR_PASSWORD` cadangan) masih dapat login karena `.env` tidak ada |
-| ST-41 | Password disimpan sebagai hash | Periksa `users.password_hash` | Berawalan `$2`; tidak ada teks asli | `admins.js`, `employees.js` | Lulus — seluruh `password_hash` berawalan `$2` (60 karakter); tidak ada teks asli |
+| ST-39 | Secret tidak memakai nilai cadangan | Periksa `JWT_SECRET` yang aktif | Berasal dari `.env`, panjang & acak; bukan nilai cadangan | `app/Services/JwtService.php:12` | Gagal — tanpa `.env`, `JWT_SECRET` memakai nilai cadangan yang diketahui — OBS-02 terbukti |
+| ST-40 | Kredensial HR bawaan tidak dipakai | Coba login dengan kredensial bawaan yang disebut README | Gagal setelah `.env` diisi password baru | `database/seeders/HrSeeder.php:24-25`, `database/seeders/` | Gagal — akun HR bawaan (`HR_EMAIL`/`HR_PASSWORD` cadangan) masih dapat login karena `.env` tidak ada |
+| ST-41 | Password disimpan sebagai hash | Periksa `users.password_hash` | Berawalan `$2`; tidak ada teks asli | `app/Http/Controllers/Api/AdminController.php`, `app/Http/Controllers/Api/EmployeeController.php` | Lulus — seluruh `password_hash` berawalan `$2` (60 karakter); tidak ada teks asli |
 | ST-42 | .env tidak ikut ter-commit | Periksa `.gitignore` | `.env` diabaikan | `.gitignore` | Lulus — `.gitignore` memuat `.env`; tidak ada `.env` ter-commit |
-| ST-43 | Brute force login | 50 percobaan password salah berurutan | Dibatasi/diperlambat (lihat OBS-01) | `routes/auth.js` | Gagal — 30 percobaan password salah: semua `401`, tanpa `429`/penundaan (rata-rata 63 ms) — OBS-01 terbukti |
-| ST-44 | Header keamanan & CORS | Periksa respons | Tidak ada kebijakan CORS terbuka di produksi; header `nosniff` ada (lihat OBS-03, OBS-07) | `app.js:8` | Gagal — `x-content-type-options`, `x-frame-options`, CSP, `referrer-policy` tidak ada; CORS `*` (BUG-01, OBS-03, OBS-07) |
+| ST-43 | Brute force login | 50 percobaan password salah berurutan | Dibatasi/diperlambat (lihat OBS-01) | `app/Providers/RouteServiceProvider.php:44-46`, `app/Http/Kernel.php:41-44` | Gagal (siklus Node) — 30 percobaan `401` tanpa `429`. **Laravel 19 Nov:** percobaan ke-61 → `429`; **Lulus** |
+| ST-44 | Header keamanan & CORS | Periksa respons | Tidak ada kebijakan CORS terbuka di produksi; header `nosniff` ada (lihat OBS-03, OBS-07) | `config/cors.php:22`, `app/Http/Kernel.php` | Gagal — `x-content-type-options`, `x-frame-options`, CSP, `referrer-policy` tidak ada; CORS `*` (BUG-01, OBS-03, OBS-07). Verifikasi 19 Nov pada Laravel: sama |
 
 ---
 
@@ -178,18 +179,18 @@ Aturan:
 
 | ID | Temuan | Bukti | Dampak | Usulan severity | Tindakan |
 |---|---|---|---|---|---|
-| OBS-01 | Tidak ada pembatasan percobaan login | `routes/auth.js` hanya membandingkan hash | Brute force tanpa hambatan | S2 | **Terbukti (ST-43)**: 30 percobaan tanpa penundaan. Backlog BL-03; untuk demo batasi di lapisan depan |
-| OBS-02 | Nilai cadangan untuk `JWT_SECRET` dan password HR ada di kode | `config.js:13`, `config.js:19`; `.env` tidak ada di repo | Bila `.env` lupa dibuat, token dapat dipalsukan dengan secret yang diketahui | S1 | **Wajib** buat `.env` sebelum demo (RISK-02) |
-| OBS-03 | CORS terbuka untuk semua origin | `app.js:8` `app.use(cors())` | Situs lain dapat memanggil API bila memiliki token | S3 | Batasi origin saat produksi |
-| OBS-04 | Validasi tipe berkas memakai header dari klien | `upload.js:19` memeriksa `f.mimetype` | Tipe palsu dapat lolos; risiko ditekan karena berkas tidak disajikan sebagai HTML | S3 | Tambahkan pemeriksaan *magic bytes* bila diperlukan |
-| OBS-05 | Kode error untuk body terlalu besar tidak konsisten | `app.js:9` memakai batas bawaan; `app.js:25` hanya memetakan `entity.parse.failed` | Klien menerima 413 dengan kode `INTERNAL`, bukan kode validasi | S4 | Petakan `entity.too.large` → `VALIDATION`/`PAYLOAD_TOO_LARGE` |
-| OBS-06 | Berkas Laravel berada di `public/` | `public/index.php`, `public/.htaccess`, `public/robots.txt`; `app.js:11` menyajikan folder `public` | `index.php` dapat diunduh sebagai berkas (bukan dieksekusi); tidak memuat rahasia | S4 | Hapus sisa scaffold atau pindahkan (RISK-03); **catatan 18 Nov:** `public/index.php` kini front controller implementasi Laravel (`app/`), bukan lagi sisa scaffold |
-| OBS-07 | Tidak ada header keamanan (mis. `X-Content-Type-Options`) | Tidak ada `helmet` di `package.json`/`app.js` | Risiko *MIME sniffing* / *clickjacking* pada browser lama | S3 | **Terbukti (ST-44)** → `BUG-01`. Pertimbangkan `helmet` untuk produksi |
-| OBS-08 | `jwt.verify` tidak membatasi algoritma secara eksplisit | `auth.js:12` | Ketergantungan pada perilaku bawaan pustaka | S4 | Tambahkan `{ algorithms: ['HS256'] }` |
-| OBS-09 | Foto tersimpan tanpa enkripsi di disk | `upload.js:15-16` | Bocor bila server diakses langsung | S3 | GAP-07; batasi izin folder |
-| OBS-10 | Tidak ada jejak audit untuk hapus karyawan / reset password | `employees.js:125`, endpoint delete | Penyalahgunaan wewenang sulit ditelusuri | S2 | Usulkan audit log |
+| OBS-01 | Tidak ada pembatasan percobaan login | Siklus Node: `AuthController` hanya membandingkan hash. Laravel: limiter `api` 60/menit aktif | Brute force tanpa hambatan (Node); terbatas 60/menit (Laravel) | S2 | **Node: terbukti (ST-43).** Laravel 19 Nov: percobaan ke-61 → `429`, mitigasi ada di level rute (`RouteServiceProvider.php:44-46`); backlog BL-03 menyusut jadi "turunkan limit khusus login" |
+| OBS-02 | Nilai cadangan untuk `JWT_SECRET` dan password HR ada di kode | `app/Services/JwtService.php:12`, `database/seeders/HrSeeder.php:24-25`; `.env` tidak ada di repo | Bila `.env` lupa dibuat, token dapat dipalsukan dengan secret yang diketahui | S1 | **Wajib** buat `.env` sebelum demo (RISK-02) |
+| OBS-03 | CORS terbuka untuk semua origin | `config/cors.php:22` `allowed_origins => ['*']` | Situs lain dapat memanggil API bila memiliki token | S3 | Batasi origin saat produksi. Verifikasi 19 Nov: preflight `204` dengan `access-control-allow-origin: *` |
+| OBS-04 | Validasi tipe berkas mengandalkan deteksi MIME server | `app/Http/Controllers/Api/AttendanceController.php:50-54` memakai `$file->getMimeType()` (finfo), bukan ekstensi/nama dari klien | Tipe palsu yang konsisten dengan isi tetap lolos bila isinya memang gambar; risiko ditekan karena berkas tidak disajikan sebagai HTML | S3 | Sudah diperbaiki 19 Nov 2026: MIME diperiksa terhadap daftar putih JPEG/PNG/WEBP |
+| OBS-05 | Kode error untuk body terlalu besar tidak konsisten | `app/Exceptions/Handler.php:52-64` memetakan semua non-404/403/401 ke `INTERNAL`, termasuk `429` dan `413` | Klien menerima `INTERNAL` untuk penolakan yang seharusnya punya kode khusus | S4 | Petakan `429` → `RATE_LIMITED`, `413` → `PAYLOAD_TOO_LARGE`. **19 Nov:** body 200 KB kini lolos normal → `401`, jadi masalah praktis menyusut |
+| OBS-06 | Berkas Laravel berada di `public/` | `public/index.php`, `public/.htaccess`, `public/robots.txt`; `routes/web.php:13-19` menyajikan folder `public` | `index.php` dapat diunduh sebagai berkas (bukan dieksekusi); tidak memuat rahasia | S4 | Hapus sisa scaffold atau pindahkan (RISK-03); **catatan 18 Nov:** `public/index.php` kini front controller implementasi Laravel (`app/`), bukan lagi sisa scaffold |
+| OBS-07 | Tidak ada header keamanan (mis. `X-Content-Type-Options`) | Tidak ada middleware header di `app/Http/Kernel.php` | Risiko *MIME sniffing* / *clickjacking* pada browser lama | S3 | **Terbukti (ST-44)** → `BUG-01`. Verifikasi 19 Nov: header tetap tidak ada di Laravel. Pertimbangkan middleware header untuk produksi |
+| OBS-08 | `jwt.verify` tidak membatasi algoritma secara eksplisit | `app/Services/JwtService.php:41-60` | Ketergantungan pada perilaku bawaan pustaka | S4 | Tambahkan `{ algorithms: ['HS256'] }` |
+| OBS-09 | Foto tersimpan tanpa enkripsi di disk | `app/Http/Controllers/Api/AttendanceController.php:100-111` | Bocor bila server diakses langsung | S3 | GAP-07; batasi izin folder |
+| OBS-10 | Tidak ada jejak audit untuk hapus karyawan / reset password | `app/Http/Controllers/Api/EmployeeController.php:291-303`, endpoint delete | Penyalahgunaan wewenang sulit ditelusuri | S2 | Usulkan audit log |
 
-| OBS-11 | Kredensial HR dicetak ke stdout saat seeding | `src/seed.js`: `console.log('[seed] HR admin: ... / ...')` | Password HR muncul di log konsol/CI | S2 | **Terbukti (ST-25)** — hapus password dari pesan log, cukup tulis "akun HR dibuat" |
+| OBS-11 | ~~Kredensial HR dicetak ke stdout saat seeding~~ **Sudah diperbaiki di Laravel** | `database/seeders/HrSeeder.php:36-37` hanya menulis "Akun HR dibuat: <email>"; tidak ada password | — | S2 | **Ditutup 19 Nov 2026** — BUG-03 tidak lagi berlaku pada implementasi Laravel |
 
 **Aturan:** OBS bukan defect sampai terbukti menyimpang dari FR/UC. Bila terbukti, pindahkan ke `13-Defect-Management.md` dengan ID `BUG-…`.
 
@@ -205,6 +206,8 @@ Aturan:
 
 Enam `Gagal` di atas sudah tercatat sebagai `BUG-01` (header keamanan), `BUG-02` (TypeError UI, di luar checklist ini), `BUG-03` (kredensial di log), serta OBS-01/OBS-02/OBS-05 yang terbukti. Tidak satu pun berupa kebocoran data lintas pengguna: batas kepercayaan §2 seluruhnya bertahan (ST-01..ST-24 Lulus).
 
+> **Angka di atas milik siklus Node (18 Nov 2026).** Pada implementasi Laravel, ST-31/ST-34/ST-35/ST-43 berubah menjadi **Lulus** dan ST-25/ST-40 ikut membaik karena seeder tidak lagi mencetak password — lihat §13. ST-44 (header) tetap **Gagal**. Karena itu, jangan menyimpulkan "6 Gagal" untuk Laravel; status per baris + §13 adalah acuan yang benar.
+
 ---
 
 ## 11. Pemetaan ke OWASP Top 10 (2021)
@@ -214,9 +217,9 @@ Enam `Gagal` di atas sudah tercatat sebagai `BUG-01` (header keamanan), `BUG-02`
 | A01 Broken Access Control | **Sangat tinggi** — inti sistem | ST-01..ST-20 |
 | A02 Cryptographic Failures | Tinggi — token & password | ST-22..ST-26, ST-39..ST-42 |
 | A03 Injection | Sedang — query dinamis dengan parameter | ST-27..ST-30 |
-| A04 Insecure Design | Sedang — tanpa rate limit, tanpa audit | OBS-01, OBS-10 |
+| A04 Insecure Design | Sedang — rate limit ada di level rute (60/menit), audit belum | OBS-01, OBS-10 |
 | A05 Security Misconfiguration | Tinggi — CORS, header, sisa scaffold | ST-39..ST-44, OBS-02, OBS-03, OBS-06 |
-| A06 Vulnerable Components | Rendah–sedang | `npm audit` (di luar checklist ini) |
+| A06 Vulnerable Components | Rendah–sedang | `composer audit` (di luar checklist ini) |
 | A07 Auth Failures | Tinggi | ST-01..ST-06, ST-43 |
 | A08 Data Integrity Failures | Sedang — unggahan berkas | ST-33..ST-38 |
 | A09 Logging Failures | Sedang | ST-25, OBS-10 |
@@ -229,7 +232,7 @@ Enam `Gagal` di atas sudah tercatat sebagai `BUG-01` (header keamanan), `BUG-02`
 | Hal | Alasan |
 |---|---|
 | Uji penetrasi formal | Butuh waktu & alat khusus; di luar 3 hari |
-| Pemindaian kerentanan dependensi menyeluruh | Hanya `npm audit` sebagai bahan |
+| Pemindaian kerentanan dependensi menyeluruh | Hanya `composer audit` sebagai bahan |
 | Uji beban/DoS | Target NFR dicatat di `09-Test-Plan.md` |
 | Keamanan aplikasi mobile | Aplikasi belum ada |
 | Enkripsi at-rest database | Tidak dikonfigurasi pada SQLite lokal |
@@ -237,7 +240,27 @@ Enam `Gagal` di atas sudah tercatat sebagai `BUG-01` (header keamanan), `BUG-02`
 
 ---
 
-## 13. Pelaporan
+## 13. Verifikasi Ulang pada Implementasi Laravel (19 November 2026)
+
+Setelah Node dihapus, lima pemeriksaan yang perilakunya bergantung pada kode diuji ulang pada server Laravel nyata (`php artisan serve`, port 3314, DB SQLite terpisah, PHP 8.5.12). Hasilnya **berbeda** dari siklus Node dan menggantikan angka pada baris ST terkait.
+
+| ID | Perilaku Node (18 Nov) | Perilaku Laravel (19 Nov, terukur) | Status Laravel |
+|---|---|---|---|
+| ST-31 | Body 200 KB → `413 INTERNAL` | Body 200 KB → `401 INVALID_CREDENTIALS`; hanya > `post_max_size` 40 MB yang ditolak | **Lulus** |
+| ST-34 | 6 MB → `400 INVALID_PHOTO` | `400 INVALID_PHOTO` "Foto maksimal 5 MB" | **Lulus** |
+| ST-35 | `.txt`/`.pdf`/`.svg` → `400 INVALID_PHOTO` | `400 INVALID_PHOTO` "Foto harus JPEG/PNG/WEBP" | **Lulus** |
+| ST-43 | 30 percobaan tanpa `429` | Percobaan ke-61 → `429` ("Too Many Attempts.") karena `ThrottleRequests:api` 60/menit | **Lulus** |
+| ST-44 | Tanpa header keamanan, CORS `*` | Tetap tanpa `x-content-type-options`/`x-frame-options`/CSP; `access-control-allow-origin: *` | **Gagal** (BUG-01) |
+
+**Catatan validasi foto.** `verifyGpsAndPhoto` kini memeriksa MIME nyata (`image/jpeg`, `image/png`, `image/webp`) dan ukuran ≤ 5 MB sebelum berkas ditulis (`app/Http/Controllers/Api/AttendanceController.php:49-58`), sehingga `INVALID_PHOTO` memang dapat terjadi dan berkas ditolak tidak meninggalkan file di `uploads/attendance/`. Foto disimpan dengan nama acak `att_<Ymd_His>_<hex>.<ext>` (baris 106-107), bukan nama dari klien — ST-36 tetap berlaku.
+
+**Catatan rate limit.** Limiter `api` membatasi 60 permintaan/menit per pengguna/IP (`app/Providers/RouteServiceProvider.php:44-46`) dan aktif untuk seluruh rute API (`app/Http/Kernel.php:41-44`). Respons `429` masih memakai kode `INTERNAL` karena `Handler` tidak memetakannya khusus — dicatat sebagai OBS-05 (varian rate limit).
+
+**Catatan kredensial seed.** `HrSeeder` **tidak** mencetak password (`database/seeders/HrSeeder.php:36-37`); BUG-03 tidak lagi berlaku pada Laravel. Seeder tetap memakai nilai cadangan dari `env()` bila `.env` tidak ada (OBS-02, ST-39/ST-40 tetap relevan).
+
+---
+
+## 14. Pelaporan
 
 | Hasil | Tindakan |
 |---|---|
@@ -249,7 +272,7 @@ Enam `Gagal` di atas sudah tercatat sebagai `BUG-01` (header keamanan), `BUG-02`
 
 ---
 
-## 14. Keterkaitan Dokumen
+## 15. Keterkaitan Dokumen
 
 | Dokumen | Peran |
 |---|---|

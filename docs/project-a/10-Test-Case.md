@@ -17,7 +17,7 @@
 
 | Istilah | Arti |
 |---|---|
-| `<BASE>` | `http://localhost:3000` (atau port yang dipakai) |
+| `<BASE>` | `http://localhost:8000` (atau port `php artisan serve --port=...`) |
 | `<HR_TOKEN>` | Token hasil login akun HR |
 | `<EMP_TOKEN>` | Token hasil login karyawan |
 | `<EMP_ID>` | `employees.id` karyawan uji |
@@ -53,7 +53,7 @@ ID test case mengikuti modul tempat kasus itu dibahas, bukan nomor urut dokumen.
 
 ## 2. Smoke Pack — Alur Inti (13 TC)
 
-> 13 kasus ini berasal dari `test/attendance.test.js` dan menjadi **regression pack wajib** setiap ada perubahan kode. Kasusnya didefinisikan pada bab modul masing-masing; tabel berikut hanya daftar rujukan agar tidak ada duplikasi.
+> 13 kasus ini berasal dari `tests/Feature/WorkforceAttendanceTest.php` dan menjadi **regression pack wajib** setiap ada perubahan kode. Kasusnya didefinisikan pada bab modul masing-masing; tabel berikut hanya daftar rujukan agar tidak ada duplikasi.
 
 | Urutan | ID | Fokus | Didefinisikan di |
 |---|---|---|---|
@@ -150,7 +150,7 @@ ID test case mengikuti modul tempat kasus itu dibahas, bukan nomor urut dokumen.
 | TC-ATT-10 | Foto melebihi 5 MB | FR-ATT-15 | Token karyawan | Absen masuk dengan berkas foto berukuran 6 MB. | Ditolak `400 INVALID_PHOTO` "Foto maksimal 5 MB". | Lulus |
 | TC-ATT-11 | Jenis foto tidak didukung | FR-ATT-15 | Token karyawan | Absen masuk dengan berkas teks (`.txt`). | Ditolak `400 INVALID_PHOTO` "Foto harus JPEG/PNG/WEBP". | Lulus |
 | TC-ATT-12 | Foto yatim dibersihkan saat ditolak | FR-ATT-14 | Token karyawan, di luar radius | 1) Hitung berkas di folder unggahan. 2) Absen masuk dari luar radius. 3) Hitung ulang. | Ditolak `403 OUTSIDE_RADIUS`; jumlah berkas tidak bertambah (foto tidak tertinggal). | Lulus |
-| TC-ATT-13 | Batas waktu 08:15 vs 08:16 (unit) | FR-ATT-07 | Node.js | Jalankan pemeriksaan status absensi untuk pukul 08:15 dan 08:16 WIB. | 08:15 masih `TEPAT_WAKTU`; 08:16 `TERLAMBAT`; hasil tidak bergantung zona waktu mesin. | Lulus |
+| TC-ATT-13 | Batas waktu 08:15 vs 08:16 (unit) | FR-ATT-07 | PHP/Laravel | Jalankan `TimeService::attendanceStatus()` untuk pukul 08:15 dan 08:16 WIB. | 08:15 masih `TEPAT_WAKTU`; 08:16 `TERLAMBAT`; hasil tidak bergantung zona waktu mesin. | Lulus |
 | TC-ATT-14 | Hanya dua status yang tersimpan | FR-ATT-07, 13 | Ada data absensi | Periksa nilai status di database dan pada respons API. | Database hanya berisi `TEPAT_WAKTU` atau `TERLAMBAT`; status turunan (`BELUM_IN`, `BELUM_OUT`, `SUDAH_OUT`) hanya muncul pada respons dan tidak tersimpan. | Lulus |
 
 ---
@@ -219,10 +219,16 @@ curl -X POST "$BASE/api/attendance/check-in" \
 ### 11.4 Token kedaluwarsa (TC-AUTH-05)
 
 ```bash
-node -e "const jwt=require('jsonwebtoken');console.log(jwt.sign({sub:1,role:'HR'},process.env.JWT_SECRET,{expiresIn:'-1s'}))"
+php -r '
+  $secret = getenv("JWT_SECRET") ?: "ganti-dengan-secret-panjang-dan-acak";
+  $b64 = fn($s) => rtrim(strtr(base64_encode($s), "+/", "-_"), "=");
+  $h = $b64(json_encode(["alg" => "HS256", "typ" => "JWT"]));
+  $p = $b64(json_encode(["sub" => 1, "role" => "HR", "iat" => time() - 120, "exp" => time() - 60]));
+  echo "$h.$p." . $b64(hash_hmac("sha256", "$h.$p", $secret, true)) . PHP_EOL;
+'
 ```
 
-Jalankan dari root proyek agar `jsonwebtoken` dan `JWT_SECRET` tersedia.
+Jalankan dari root proyek; `JWT_SECRET` harus sama dengan yang dipakai server agar tanda tangan sah tetapi `exp` sudah lewat (401).
 
 ---
 
@@ -252,7 +258,7 @@ Jalankan dari root proyek agar `jsonwebtoken` dan `JWT_SECRET` tersedia.
 
 | Suite | Cakupan | Jumlah | Hasil |
 |---|---|---|---|
-| Unit test repo | `test/attendance.test.js` (`node --test`) | 10 | **10 Lulus** |
+| Unit test repo | `test/attendance.test.js` (Node, siklus 18 Nov 2026) | 10 | **10 Lulus** |
 | API inti | auth, karyawan, admin, absensi, dashboard | 109 | **109 Lulus** |
 | API lanjutan | office, keamanan, otorisasi lintas peran | 21 | **20 Lulus**, 1 temuan (header keamanan) |
 | API penutup | TC yang belum tercakup suite sebelumnya | 13 | **13 Lulus** |
@@ -261,7 +267,7 @@ Jalankan dari root proyek agar `jsonwebtoken` dan `JWT_SECRET` tersedia.
 | UI Web HR lanjutan | pembatasan akses, ubah/reset/hapus, tab dashboard | 15 | **14 Lulus**, 1 temuan (TypeError konsol) |
 | UI Web HR penutup | tombol salin, error form, muat ulang per menu, pembaruan otomatis | 4 | **4 Lulus** |
 
-Total pemeriksaan otomatis: **193 eksekusi** dengan **191 Lulus** dan **2 temuan** (lihat §13.4). Parameter lingkungan: Windows 11, Node v22.23.2, server `src/server.js` port 3311, database & folder unggahan QA terpisah dari `data/` repo, zona Asia/Jakarta, Chrome headless 1440×900.
+Total pemeriksaan otomatis: **193 eksekusi** dengan **191 Lulus** dan **2 temuan** (lihat §13.4). Parameter lingkungan siklus ini: Windows 11, Node v22.23.2 (implementasi Node yang kini dihapus), server port 3311, database & folder unggahan QA terpisah dari repo, zona Asia/Jakarta, Chrome headless 1440×900. Verifikasi Laravel terpisah (5/5 tes fitur) ada di `17-Test-Automation.md` §0.1a.
 
 ### 13.2 Penyimpangan pengujian
 
@@ -269,7 +275,7 @@ Total pemeriksaan otomatis: **193 eksekusi** dengan **191 Lulus** dan **2 temuan
 |---|---|
 | TC manual (`TC-AUTH-09`, `TC-HIS-09`, `TC-WEB-01`, `TC-WEB-02`) | Dijalankan dengan browser driver (Puppeteer), bukan tangan; tangkapan layar tersimpan pada folder bukti |
 | `TC-ATT-01` … `TC-ATT-14`, `TC-EMP-12`, `TC-OFF-06` | Dijalankan lewat klien API karena aplikasi mobile belum ada di repo |
-| `TC-ATT-13` | Diuji sebagai fungsi murni (`src/utils/time.js`) agar tidak bergantung jam nyata |
+| `TC-ATT-13` | Diuji sebagai fungsi murni (`app/Services/TimeService.php`) agar tidak bergantung jam nyata |
 | `TC-EMP-15` | Cabang peringatan (berkas gagal dihapus) tidak dapat dipicu; hanya jalur sukses yang dibuktikan |
 | `TC-EMP-09` langkah 5 | Payload injeksi dikirim dalam bentuk ter-encode sehingga diterima sebagai teks pencarian biasa |
 
@@ -283,9 +289,9 @@ Data uji memakai database QA terpisah. Penomoran `kyNN`, `HRnn`, dan `attendance
 |---|---|---|---|
 | BUG-01 | Respons web tidak memuat header keamanan (`X-Content-Type-Options`, `X-Frame-Options`, CSP, `Referrer-Policy` semuanya tidak ada) | Medium | Sheet `AUTH` baris BUG-01; `hasil-extra.json#AUTH-18` |
 | BUG-02 | `TypeError: Cannot set properties of null (setting 'innerHTML')` di `public/app.js:374` ketika 401 memicu `logout()` saat daftar karyawan sedang dimuat | Low | Sheet `EMP` baris BUG-02; `hasil-ui2.json#WEBX-15` |
-| BUG-03 | `src/seed.js` mencetak email dan password HR ke stdout saat seeding | High | Sheet `AUTH` baris BUG-03; `hasil-sec2.json#ST-25` |
+| BUG-03 | `database/seeders/` (siklus Node) mencetak email dan password HR ke stdout saat seeding; **ditutup 19 Nov 2026** pada seeder Laravel | High | Sheet `AUTH` baris BUG-03; `hasil-sec2.json#ST-25` |
 
-Ketiganya tidak menggagalkan satu pun alur bisnis: seluruh 61 TC tetap **Lulus**. Rincian perbaikan yang disarankan ada pada kolom *Notes* di berkas xlsx dan `13-Defect-Management.md`.
+Ketiganya tidak menggagalkan satu pun alur bisnis: seluruh 61 TC tetap **Lulus**. BUG-03 sudah ditutup; BUG-01 dan BUG-02 masih terbuka. Rincian perbaikan yang disarankan ada pada kolom *Notes* di berkas xlsx dan `13-Defect-Management.md`.
 
 ### 13.5 Catatan teknis
 

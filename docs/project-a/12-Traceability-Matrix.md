@@ -203,10 +203,10 @@
 | NFR-09 | TC-ATT-02, TC-ATT-14 | Unique constraint |
 | NFR-10 | TC-WEB-01 | Loading, error, empty state ada |
 | NFR-11 | TC-WEB-01 | Alur inti ≤ 3 klik (manual) |
-| NFR-12 | Tinjauan struktur | `routes/`, `middleware/`, `utils/` terpisah |
-| NFR-13 | Eksekusi `npm install && npm start` | Berhasil di Node 22.13+ |
+| NFR-12 | Tinjauan struktur | `routes/`, `app/Http/Middleware/`, `app/Services/` terpisah |
+| NFR-13 | Eksekusi `composer install && php artisan serve` | Berhasil di PHP 8.5.12 / Laravel 10 |
 | NFR-14 | TC-WEB-02 (error 500) | Log server mencatat |
-| NFR-15 | `npm test` | Dijalankan dan hasilnya dicatat |
+| NFR-15 | `php artisan test` | Dijalankan dan hasilnya dicatat |
 | NFR-16 | TC-AUTH-09, TC-WEB-01 | Pesan berbahasa Indonesia |
 | NFR-17 | TC-ATT-13 | Batas waktu konsisten dengan `Asia/Jakarta` |
 
@@ -226,7 +226,7 @@
 
 ```bash
 # 1. Jalankan seluruh tes otomatis
-npm test
+php artisan test
 
 # 2. Hitung FR di dokumen (harus 63)
 grep -o 'FR-[A-Z]*-[0-9][0-9]' docs/project-a/01-SRS.md | sort -u | wc -l

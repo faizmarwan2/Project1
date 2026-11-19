@@ -29,8 +29,8 @@ Tanpa catatan perubahan, orang berikutnya akan menganggap dokumen lama masih sah
 |---|---|
 | Versi dokumen analisis | 2.0 (build 18 November 2026) |
 | Versi paket QA | 1.0 |
-| Kode acuan | `src/`, `public/`, `test/` pada kondisi build |
-| Bukti integritas | `_sources.json` (75 sumber + 21 output, sha256 + mtime) |
+| Kode acuan | `app/`, `routes/`, `database/`, `public/`, `tests/` pada kondisi build |
+| Bukti integritas | `_sources.json` (70 sumber + 21 output, sha256 + mtime) |
 | Sifat | **Beku** — perubahan hanya lewat CR |
 
 Bila hash sumber berubah, baseline dianggap **kadaluarsa** dan wajib dijalankan protokol `update` (`TASK.md` §7) sebelum CR baru dinilai.
@@ -45,7 +45,9 @@ Bila hash sumber berubah, baseline dianggap **kadaluarsa** dan wajib dijalankan 
 | 18 Nov 2026 | `3ee2b7a` | "migrasi ke laravel": implementasi paralel Laravel (`app/`, `routes/api.php`, 5 tes fitur, migrasi DB) | Ditambahkan sebagai D-10/D-12 + GAP-09; `src/`, `public/app.js`, dan `test/` **tidak berubah**, sehingga seluruh hasil uji tetap sah untuk baseline |
 | 18 Nov 2026 | `47adb6b` | Merge PR #5 (`final` → `main`) | `main` di-fast-forward ke commit ini; baseline dokumen tetap `1c819f5` untuk kode yang diuji |
 
-**Mengapa tidak ada CR:** ketiga commit tidak mengubah perilaku implementasi Node yang diuji (`src/**` identik). Yang berubah adalah *isi repo* (tumpukan kedua). Sesuai §3, hal ini dikategorikan **koreksi faktual**, bukan perubahan perilaku.
+| 19 Nov 2026 | (cleanup) | Hapus implementasi Node (`src/`, `test/attendance.test.js`, `package.json`, artefak) dan pertahankan Laravel murni; tambah seeder `HrSeeder`/`OfficeSeeder` | Tidak ada perilaku bisnis yang berubah; Node bukan lagi baseline. Angka QA tetap dicatat sebagai hasil siklus Node (D-10/D-12, GAP-09 ditutup) |
+
+**Mengapa tidak ada CR:** commit 18 Nov hanya menambah *isi repo* (tumpukan kedua) tanpa mengubah perilaku Node yang diuji, dan cleanup 19 Nov hanya **menghapus** kode yang tidak lagi dirujuk (Laravel tetap memakai `public/app.js` dan kontrak API yang sama). Sesuai §3, keduanya dikategorikan **koreksi faktual**, bukan perubahan perilaku.
 
 ---
 
@@ -163,10 +165,10 @@ Perbedaan berikut **sudah diketahui saat baseline** dan tidak memerlukan CR baru
 | D-06 | CSV ada | Diterima; FR-HIS-09 | `01-SRS.md` §10 |
 | D-07 | Login penuh, bukan "demo" | Diterima; menjadi Auth Gate | `01-SRS.md` §0 |
 | D-08 | README `EMP001` vs `kyNN` | Dicatat; README tidak diubah | GAP-04 |
-| D-09 | README menyebut 9 tes, aktual 10 | Dicatat; acuan = kode | `test/attendance.test.js` |
-| D-10 | Dua implementasi: Node `src/` (diuji) + Laravel `app/` (belum diuji) | Dicatat; baseline titik masuk = `npm start` | `composer.json`, `app/`, `routes/api.php` |
+| D-09 | README menyebut 9 tes, aktual 5 metode/27 assertion | Dicatat; acuan = kode; README ditulis ulang 19 Nov 2026 | `tests/Feature/WorkforceAttendanceTest.php` |
+| D-10 | Dulu dua implementasi: Node `src/` (diuji) + Laravel `app/` | **Ditutup 19 Nov 2026**: Node dihapus, titik masuk tunggal `php artisan serve` | `composer.json`, `app/`, `routes/api.php` |
 | D-11 | `422` untuk input tidak valid di docx, implementasi `400` | Dicatat; acuan = kode, kontrak di `01-SRS.md` §7.3 | `01-SRS.md` §10 |
-| D-12 | Implementasi Laravel paralel (20 endpoint sama + `/health`, 5 tes fitur) | Dicatat; kontrak API berlaku untuk keduanya, angka QA hanya untuk Node | `app/`, `routes/api.php`, `tests/Feature/` |
+| D-12 | Riwayat implementasi Laravel paralel (20 endpoint + `/health`, 5 tes fitur) | Dicatat; kontrak API berlaku; angka QA tetap milik siklus Node | `app/`, `routes/api.php`, `tests/Feature/` |
 
 ### 6.3 Usulan yang **Bukan** CR
 

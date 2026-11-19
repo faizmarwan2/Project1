@@ -2,7 +2,7 @@
 
 Folder ini berisi paket dokumen analisis dan desain untuk **Project A — Workforce Attendance System**, yang seluruhnya diturunkan dari isi project ini:
 
-- kode sumber: `src/` (Express API), `public/` (Web HR), `test/`
+- kode sumber: `app/` + `routes/api.php` (Laravel 10), `database/` (migrasi & seeder), `public/` (Web HR)
 - dokumen awal: `docs/ETHES_TECH Project.docx` (Bab 1 Project A, Bab 3–5 standar engineering)
 - kontrak yang dinyatakan repo: `README.md`
 - work order: `TASK.md` (batasan, invarian, protokol `build`/`update`)
@@ -19,9 +19,9 @@ Hal ini bukan usulan, melainkan perilaku yang sudah berjalan dan menjadi benang 
 
 | Lapisan | Bukti |
 |---|---|
-| API HR | `router.use(auth, requireRole('HR'))` pada `employees`, `admins`, `dashboard` |
-| API absensi | `router.use(auth)`; `requireRole('EMPLOYEE')` untuk today/IN/OUT |
-| API office | `router.use(auth)`; tulis hanya `HR` |
+| API HR | `middleware(['jwt.auth', 'role:HR'])` pada grup `employees`, `admins`, `dashboard` |
+| API absensi | `jwt.auth`; `role:EMPLOYEE` untuk today/IN/OUT |
+| API office | `jwt.auth`; tulis hanya `role:HR` |
 | Web HR | Tanpa token → layar Login; respons 401 → `logout()` |
 | Web HR | Akun non-HR ditolak: "Akun ini bukan HR…" |
 
@@ -49,7 +49,7 @@ Pengecualian publik hanya: `POST /api/login`, `GET /health`, dan aset statis Web
 | 14 | [`14-Risk-Register.md`](./14-Risk-Register.md) | Register risiko gabungan, skala P×D, heat map, 5 risiko teratas, risiko diterima, siklus peninjauan | 22 risiko |
 | 15 | [`15-Change-Request-Log.md`](./15-Change-Request-Log.md) | Baseline, klasifikasi perubahan, format CR, alur persetujuan, tabel dampak, deviasi D-01..D-12 | 0 CR formal |
 | 16 | [`16-Security-Test-Checklist.md`](./16-Security-Test-Checklist.md) | Auth gate, otorisasi, token, injeksi, unggah berkas, konfigurasi, temuan statis, pemetaan OWASP | 44 pemeriksaan · 10 observasi |
-| 17 | [`17-Test-Automation.md`](./17-Test-Automation.md) | Peta otomasi 61 TC, arsitektur harness, contoh kode `node:test`, tes waktu, browser, CI, **hasil eksekusi 193 pemeriksaan** | 57 dapat diotomasi |
+| 17 | [`17-Test-Automation.md`](./17-Test-Automation.md) | Peta otomasi 61 TC, arsitektur harness, contoh PHPUnit (`php artisan test`), tes waktu, browser, CI, **hasil eksekusi 193 pemeriksaan** + verifikasi Laravel 5/5 | 57 dapat diotomasi |
 | 18 | [`18-Test-Summary-Report.md`](./18-Test-Summary-Report.md) | Laporan siklus **terisi** (`QA-RPT-20261118-01`) + template laporan harian, ringkasan eksekusi, verdict, tanda tangan | 1 laporan + 1 template |
 | 19 | [`19-Glossary.md`](./19-Glossary.md) | Istilah domain, status vs state, peran & kode, pola ID, istilah sering tertukar, satuan, kode error | ±90 istilah |
 | — | [`TASK.md`](./TASK.md) | Work order: batasan, invarian, protokol `build`/`update` | — |
@@ -62,9 +62,9 @@ Pengecualian publik hanya: `POST /api/login`, `GET /health`, dan aset statis Web
 | Aspek | Keterangan |
 |---|---|
 | Aktor | HR Admin (Web), Employee (Mobile/klien API) |
-| Stack | Node.js 22.13+ · Express · SQLite (`node:sqlite`) · JWT · bcrypt · multer |
+| Stack | PHP 8.5 + Laravel 10 · SQLite (`pdo_sqlite`) · JWT (HMAC-SHA256) · bcrypt · Eloquent |
 | Jam kerja | 08:00 WIB, toleransi 15 menit → **lewat 08:15 = `TERLAMBAT`** |
-| Zona waktu | `Asia/Jakarta`, dihitung dari jam server (`src/utils/time.js`) |
+| Zona waktu | `Asia/Jakarta`, dihitung dari jam server (`app/Services/TimeService.php`) |
 | Aturan inti | Satu pasang IN/OUT per karyawan per tanggal (`UNIQUE employee_id, work_date`) |
 | Verifikasi | Foto kamera (≤ 5 MB) + koordinat GPS + radius office (10–5000 m) |
 | Status tersimpan | Hanya `TEPAT_WAKTU` / `TERLAMBAT` |
@@ -122,47 +122,69 @@ sore   : triage defect 15 menit → perbarui RTM & laporan
 akhir  : jalankan UAT → tanda tangan → putuskan siap/tidak siap demo
 ```
 
-> **Status paket QA (18 November 2026):** seluruh rangkaian **sudah dieksekusi** pada Node v22.23.2 dengan database QA terpisah.
+> **Status paket QA (18 November 2026):** seluruh rangkaian **sudah dieksekusi** pada Node v22.23.2 dengan database QA terpisah. Implementasi Node itu **sudah dihapus** pada cleanup 19 Nov 2026; angka di bawah adalah rekaman siklus tersebut, bukan klaim ulang untuk Laravel.
 >
 > | Ukuran | Hasil |
 > |---|---|
 > | Test case | **61 / 61 Lulus** (100%) |
-> | Unit test repo | **10 / 10 Lulus** (`npm test`) |
+> | Unit test repo | **10 / 10 Lulus** (siklus Node: `node --test`, 10 kasus; kini 5 metode PHPUnit) |
 > | Pemeriksaan otomasi | **193** eksekusi — 191 Lulus, 2 temuan UI/konfigurasi |
 > | UAT | **14 Lulus, 1 Blocked** (UAT-11, aplikasi mobile belum ada) |
 > | Security checklist | **37 Lulus, 6 Gagal, 1 Belum** dari 44 |
-> | Defect | **3** (S2: 1, S3: 1, S4: 1), 0 S1, semuanya terbuka |
+> | Defect | **3** (S2: 1, S3: 1, S4: 1), 0 S1; BUG-03 ditutup 19 Nov 2026 |
+>
+> **Verifikasi ulang pasca-cleanup (19 Nov 2026, Laravel):** `php artisan test` **5/5 lulus**;
+> 18 pemeriksaan API end-to-end lulus; `db:seed` membuat akun HR + office demo secara idempoten.
 >
 > Bukti per test case ada di `../Project A - QA Test Cases.xlsx` (5 sheet, 64 blok); rincian hasil dan verdict ada di `18-Test-Summary-Report.md`. Yang **belum** diklaim: penerimaan pengguna — kolom tanda tangan `11-UAT.md` masih kosong karena sesi UAT resmi belum dilakukan.
 
 ---
 
-## Dua Implementasi di Repo
+## Satu Implementasi: Laravel
 
-| Aspek | Node/Express (**baseline yang diuji**) | Laravel 10 (paralel, belum diuji) |
-|---|---|---|
-| Lokasi | `src/`, `public/app.js` | `app/`, `routes/api.php`, `public/index.php` |
-| Titik masuk | `npm start` (`src/server.js`) | `php artisan serve` (butuh `vendor/`) |
-| Gerbang login | `src/middleware/auth.js:7-19` | `app/Http/Middleware/JwtAuth.php`, `routes/api.php:18` |
-| Pembatasan peran | `requireRole` (`src/middleware/auth.js:21-22`) | `app/Http/Middleware/RequireRole.php`, `role:HR` |
-| Endpoint | 20 endpoint API + `/health` | 20 endpoint API + `/health` (kontrak sama) |
-| Tes | `test/attendance.test.js` — 10 kasus | `tests/Feature/WorkforceAttendanceTest.php` — 5 kasus |
-| Status di paket ini | Seluruh 61 TC, 15 UAT, 44 ST, dan 193 pemeriksaan | **Tidak diuji**; dicatat sebagai fakta repo (D-10/D-12) |
+| Aspek | Keterangan |
+|---|---|
+| Lokasi | `app/`, `routes/api.php`, `database/`, `public/` |
+| Titik masuk | `php artisan serve` (butuh `vendor/`) |
+| Gerbang login | `app/Http/Middleware/JwtAuth.php:20-42`, `routes/api.php:18` |
+| Pembatasan peran | `app/Http/Middleware/RequireRole.php:11-19`, `role:HR` |
+| Endpoint | 20 endpoint API + `/health` |
+| Tes | `tests/Feature/WorkforceAttendanceTest.php` — 5 kasus |
+| Seed akun HR | `database/seeders/HrSeeder.php`, `database/seeders/OfficeSeeder.php` |
 
-Kedua tumpukan menyajikan kontrak API yang sama, sehingga `01-SRS.md` §7.1 tetap berlaku untuk keduanya. Rujukan baris, angka eksekusi, dan bukti QA di seluruh paket ini **hanya** mengacu implementasi Node pada commit `47adb6b` — kode `src/`, `public/app.js`, dan `test/` identik dengan baseline `1c819f5`, sehingga hasil uji tetap sah.
+> **Riwayat (D-10/D-12):** sampai 19 Nov 2026 repo memuat **dua** implementasi —
+> Node/Express di `src/` (baseline yang diuji: 61 TC, 15 UAT, 44 ST, 193 pemeriksaan)
+> dan Laravel di `app/`. Implementasi Node beserta `test/`, `data/`, dan `uploads-test/`
+> sudah **dihapus** agar repo berisi satu tumpukan saja. Karena keduanya
+> menyajikan kontrak API yang sama, seluruh angka QA dan rujukan bukti di paket ini
+> tetap berlaku: yang berubah hanya *lokasi kode*, bukan perilaku.
+> Rujukan baris `src/**` pada dokumen sudah dipetakan ke padanan Laravel
+> (mis. `src/routes/attendance.js:61-72` → `app/Http/Controllers/Api/AttendanceController.php:111-138`).
+> Untuk melacak kode Node aslinya, gunakan commit `47adb6b` (`git show 47adb6b:src/...`).
 
 ---
 
 ## Prasyarat Sebelum Menjalankan Apa Pun
 
-| Hal | Syarat | Kondisi saat ini (18 Nov 2026) |
+| Hal | Syarat | Kondisi saat ini |
 |---|---|---|
-| Node.js | **≥ 22.13** (`node:sqlite`) | **v22.23.2** dipakai untuk seluruh eksekusi; Node v20.18.0 terbukti gagal (`ERR_UNKNOWN_BUILTIN_MODULE`) |
-| `.env` | Ada, `JWT_SECRET` acak, `HR_PASSWORD` diganti | **Belum ada**; eksekusi memakai nilai cadangan dan dicatat sebagai OBS-02/ST-39 |
-| Titik masuk | `npm start` (`src/server.js`) | Implementasi yang diuji. Repo juga memuat implementasi Laravel paralel (`php artisan serve`) yang **belum diuji** — lihat bagian "Dua Implementasi di Repo" |
-| Database uji | `DB_PATH` + `UPLOAD_DIR` terpisah | Dipenuhi: database & unggahan di folder temp, `data/` repo tidak tersentuh |
+| PHP | **≥ 8.1** (Laravel 10) dengan `pdo_sqlite`, `mbstring`, `openssl` | **PHP 8.5.12** dipakai saat verifikasi cleanup |
+| Composer | ≥ 2.x | **2.10.3** |
+| `vendor/` | Hasil `composer install` | **Belum di-commit** (gitignored); jalankan `composer install` |
+| `.env` | Ada, `APP_KEY` dibuat, `JWT_SECRET` acak, `HR_PASSWORD` diganti | **Belum ada**; salin dari `.env.example` lalu `php artisan key:generate` |
+| Database | `database/database.sqlite` + `php artisan migrate` | Berkas dibuat manual (lihat `README.md` root) |
+| Titik masuk | `php artisan serve` → `http://localhost:8000` | Satu-satunya implementasi di repo |
 
 Rincian: `14-Risk-Register.md` RISK-01/RISK-02/RISK-03 dan `09-Test-Plan.md` §4.2.
+
+> **Catatan riwayat eksekusi QA:** seluruh angka hasil uji (61 TC, 15 UAT, 44 ST,
+> 193 pemeriksaan) dikumpulkan pada 18 Nov 2026 terhadap implementasi Node
+> (`node --test`, commit `1c819f5`) yang kini sudah dihapus. Kontrak API-nya sama,
+> dan setelah cleanup implementasi Laravel diverifikasi ulang:
+> `php artisan test` **5/5 lulus** serta 18 pemeriksaan API end-to-end lulus
+> (login, CRUD karyawan, check-in/out, radius, foto wajib, dashboard, Web HR).
+> Angka 61 TC/193 pemeriksaan **tidak** diklaim ulang untuk Laravel — itu hasil
+> siklus Node. Lihat `18-Test-Summary-Report.md`.
 
 ---
 
@@ -172,18 +194,18 @@ Perbedaan dicatat apa adanya, tidak ditambal dengan asumsi. Rincian di `01-SRS.m
 
 | No | Butir | Dokumen awal | Implementasi |
 |---|---|---|---|
-| D-01 | Basis data | MySQL + migrations/seeder | SQLite `node:sqlite`, migrasi `PRAGMA user_version` 1→3 |
+| D-01 | Basis data | MySQL + migrations/seeder | SQLite + migrasi Laravel (`database/migrations/`) |
 | D-02 | GPS/kamera/geofence | Di luar scope wajib | Diimplementasikan (foto wajib + radius) |
 | D-03 | Endpoint karyawan | GET/POST/PUT | Ditambah DELETE, reset-password, `/api/admins` |
 | D-04 | Format respons | `{success, message, data, error}` | `{data, meta}` / `{error:{code,message}}` |
-| D-05 | Struktur folder | `backend/`, `mobile/`, `docs/` | Backend di `src/`, Web di `public/`, **mobile belum ada** |
+| D-05 | Struktur folder | `backend/`, `mobile/`, `docs/` | Backend di `app/` + `routes/`, Web di `public/`, **mobile belum ada** |
 | D-06 | Export | Di luar scope | CSV tersedia di Web HR |
 | D-07 | Login | Disebut "login demo" | JWT + role guard, menjadi gerbang semua fitur |
 | D-08 | Kode karyawan di `README.md` | Ditulis `EMP001` | Aktual `kyNN` (`ky01`, `ky02`, …) |
-| D-09 | Jumlah tes di `README.md` | Ditulis "9 tes" | Aktual 10 `test(...)` di `test/attendance.test.js` |
-| D-10 | Tumpukan teknologi | Docx menyebut satu stack | Dua implementasi: Node `src/` (diuji) + Laravel `app/` & `routes/api.php` (commit `3ee2b7a`, belum diuji) |
+| D-09 | Jumlah tes di `README.md` | Ditulis "9 tes" | 5 metode `test_*` di `tests/Feature/WorkforceAttendanceTest.php` |
+| D-10 | Tumpukan teknologi | Docx menyebut satu stack | **Satu implementasi: Laravel 10** (`app/` + `routes/api.php`). Node `src/` (baseline uji 18 Nov) sudah dihapus pada cleanup 19 Nov 2026 |
 | D-11 | Kode status validasi | Docx: `422` input invalid | Implementasi: `400 VALIDATION`; `409` tetap untuk konflik |
-| D-12 | Implementasi kedua | Docx menyebut satu implementasi | Laravel paralel `app/` + `routes/api.php` (commit `3ee2b7a`); **belum diuji** |
+| D-12 | Implementasi kedua | Docx menyebut satu implementasi | Riwayat: Laravel pernah berdampingan dengan Node (commit `3ee2b7a`). **Sudah disatukan**; kini hanya Laravel |
 
 ---
 
@@ -199,8 +221,8 @@ Perbedaan dicatat apa adanya, tidak ditambal dengan asumsi. Rincian di `01-SRS.m
 | GAP-06 | Belum ada rate limit login | Risiko brute force |
 | GAP-07 | Foto di disk lokal tanpa enkripsi | Risiko kebocoran |
 | GAP-08 | Tidak ada endpoint hapus office | Salah input hanya bisa dinonaktifkan |
-| GAP-09 | Dua implementasi dalam satu repo | Membingungkan titik masuk; `public/index.php` tersaji sebagai berkas statis |
-| GAP-10 | README menyebut 9 tes, aktual 10 | Laporan dapat salah mengutip cakupan |
+| GAP-09 | ~~Dua implementasi dalam satu repo~~ | **Ditutup 19 Nov 2026**: implementasi Node dihapus, repo kini hanya Laravel |
+| GAP-10 | README menyebut 9 tes, aktual 5 metode/27 assertion | **Ditutup 19 Nov 2026**: `README.md` ditulis ulang, D-09 mencatat 5 metode |
 
 ---
 
@@ -232,11 +254,11 @@ npx -y @mermaid-js/mermaid-cli -i .\04-ERD.md -o erd.svg
 
 | Item | Nilai |
 |---|---|
-| Versi | 2.1 |
-| Tanggal | 18 November 2026 |
+| Versi | 2.2 |
+| Tanggal | 19 November 2026 |
 | Penyusun | Analyst |
-| Baseline kode | Branch `main`, commit `1c819f5` (kode yang diuji). `main` kini di `47adb6b`; `src/`, `public/app.js`, dan `test/` tidak berubah di antaranya |
-| Baseline sumber | `_sources.json` — 31 berkas sumber |
+| Baseline kode | Laravel 10 (`app/`, `routes/api.php`, `database/`). Riwayat: hasil QA 18 Nov 2026 dikumpulkan pada implementasi Node commit `1c819f5` (kini dihapus; kode arsip di `47adb6b`) |
+| Baseline sumber | `_sources.json` — 70 berkas sumber |
 | Jumlah dokumen | 19 dokumen + `TASK.md` + manifest |
 | Blok Mermaid | 51, seluruhnya lolos **parse Mermaid 12.3.0** dan **render SVG Mermaid CLI 11.17.1** tanpa error |
 | Status | Siap review mentor |

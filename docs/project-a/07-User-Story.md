@@ -898,11 +898,11 @@ Sebuah story siap dikerjakan bila:
 
 ## 5. Definition of Done (DoD)
 
-- [ ] Kode ada di `src/` atau `public/` dan konsisten dengan pola yang ada.
-- [ ] Endpoint terlindungi `auth` (+ `requireRole` bila perlu).
+- [ ] Kode ada di `app/`, `routes/`, atau `public/` dan konsisten dengan pola yang ada.
+- [ ] Endpoint terlindungi middleware `jwt.auth` (+ `role:` bila perlu).
 - [ ] Semua cabang error memakai kode yang terdaftar di `01-SRS.md` §11.
 - [ ] Tidak ada status lokal berubah saat respons bukan 2xx.
-- [ ] `npm test` dijalankan dan hasilnya dilaporkan.
+- [ ] `php artisan test` dijalankan dan hasilnya dilaporkan.
 - [ ] Dokumen terkait (`01`–`08`) diperbarui bila perilaku berubah.
 - [ ] Bukti uji (perintah + hasil) dicatat untuk UAT.
 

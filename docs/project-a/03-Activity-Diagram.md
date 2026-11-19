@@ -45,7 +45,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/auth.js:10-21`, `src/middleware/auth.js:7-19`, `public/app.js:62-104`.
+**Rujukan:** `app/Http/Controllers/Api/AuthController.php:22-58`, `app/Http/Middleware/JwtAuth.php:20-42`, `public/app.js:62-104`.
 
 ---
 
@@ -106,7 +106,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/attendance.js:61-72`, `src/utils/time.js:7`.
+**Rujukan:** `app/Http/Controllers/Api/AttendanceController.php:111-138`, `app/Services/TimeService.php:10-12`.
 
 ---
 
@@ -141,9 +141,9 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/attendance.js:32-52,75-90`, `src/utils/geo.js`, `src/utils/time.js:15-20`.
+**Rujukan:** `app/Http/Controllers/Api/AttendanceController.php:38-109`, `app/Services/GeoService.php`, `app/Services/TimeService.php:38-48`.
 
-**Catatan:** multer berjalan sebelum cek status karyawan, jadi `INVALID_PHOTO` dapat muncul untuk akun nonaktif. Bila handler gagal setelah foto terunggah, `withUpload` menghapus berkas itu (`attendance.js:46-52`).
+**Catatan:** urutan di Laravel adalah **cek status karyawan lebih dulu** (`getActiveEmployee`, baris 152) baru kemudian validasi foto/GPS (`verifyGpsAndPhoto`, baris 159), sehingga akun `INACTIVE` menerima `403 EMPLOYEE_INACTIVE` sebelum foto diperiksa. Foto yang gagal validasi tidak pernah ditulis ke disk, jadi tidak ada berkas yang perlu dihapus.
 
 ---
 
@@ -180,7 +180,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/attendance.js:93-103`.
+**Rujukan:** `app/Http/Controllers/Api/AttendanceController.php:139-177`.
 
 **Catatan:** kode error lengkap adalah `ALREADY_CHECKED_OUT`; diringkas menjadi `ALREADY_OUT` hanya pada gambar agar node tetap satu baris. Teks kode penuh dipakai pada `05-Flowchart.md` FC-04 dan matriks keputusan.
 
@@ -206,7 +206,7 @@ flowchart TD
     I -- "ya" --> J{"BELUM_IN &<br/>rentang > 1 hari?"}:::gate
     J -- "ya" --> X5["400 VALIDATION"]:::err
     J -- "tidak" --> K["Filter, urutan,<br/>paginasi"]
-    K --> L["Query attendances<br/>+ serialize"]
+    K --> L["Query attendances<br/>+ serializeForApi"]
     L --> M["200 data + meta"]
     M --> N["Tampilkan daftar<br/>atau empty state"]
     N --> O(["Selesai"]):::ok
@@ -217,7 +217,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/attendance.js:109-149`, `src/utils/filters.js`.
+**Rujukan:** `app/Http/Controllers/Api/AttendanceController.php:205-353`, `app/Http/Controllers/Api/AttendanceController.php:205-238`.
 
 ---
 
@@ -250,7 +250,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/attendance.js:109-152`, `public/app.js` halaman absensi.
+**Rujukan:** `app/Http/Controllers/Api/AttendanceController.php:205-353`, `public/app.js` halaman absensi.
 
 ---
 
@@ -284,7 +284,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/dashboard.js:13-38`, `public/app.js` halaman dashboard.
+**Rujukan:** `app/Http/Controllers/Api/DashboardController.php:16-112`, `public/app.js` halaman dashboard.
 
 ---
 
@@ -321,7 +321,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/employees.js:17-29,54-75`.
+**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:130-187`.
 
 ---
 
@@ -359,7 +359,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/employees.js:77-101`, `src/routes/auth.js:17-18`.
+**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:188-249`, `app/Http/Controllers/Api/AuthController.php:39-41`.
 
 ---
 
@@ -391,7 +391,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/employees.js:103-122`, `src/db.js:21,39`.
+**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:250-290`, `database/migrations/2014_10_12_000000_create_employees_table.php` + `database/migrations/2014_10_12_000001_create_users_table.php`.
 
 ---
 
@@ -426,7 +426,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/offices.js:7-41`.
+**Rujukan:** `app/Http/Controllers/Api/OfficeController.php:14-66`.
 
 ---
 
@@ -460,7 +460,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/admins.js:10-51`, `src/utils/hr-code.js`.
+**Rujukan:** `app/Http/Controllers/Api/AdminController.php:40-131`, `app/Services/HrCodeService.php`.
 
 ---
 
@@ -489,7 +489,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/employees.js:124-131`.
+**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:291-311`.
 
 ---
 
@@ -515,7 +515,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `src/routes/attendance.js:154-162`.
+**Rujukan:** `app/Http/Controllers/Api/AttendanceController.php:373-397`.
 
 ---
 

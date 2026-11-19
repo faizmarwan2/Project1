@@ -6,7 +6,7 @@
 | Versi | 1.0 |
 | Tanggal | 18 November 2026 |
 | Tujuan | Menyamakan arti istilah antara dokumen, kode, dan percakapan |
-| Sumber | `src/`, `public/`, `01-SRS.md`, `docs/ETHES_TECH Project.docx` |
+| Sumber | `app/`, `routes/`, `database/`, `public/`, `01-SRS.md`, `docs/ETHES_TECH Project.docx` |
 | Aturan | Bila istilah di dokumen berbeda dengan kode, **kode yang menang** — lalu catat sebagai deviasi |
 
 > Gunakan istilah di sini secara konsisten. Banyak kebingungan pada proyek absensi berasal dari kata yang sama dipakai untuk hal berbeda (mis. "status" vs "state", "kode karyawan" vs "kode akun").
@@ -18,20 +18,20 @@
 | Istilah | Arti | Rujukan |
 |---|---|---|
 | **Absensi** | Satu catatan kehadiran seorang karyawan pada satu tanggal kerja, terdiri atas IN dan (bila ada) OUT | tabel `attendances` |
-| **Check-in (IN)** | Tindakan mencatat kedatangan: menyimpan jam, foto, koordinat, office, dan jarak | `attendance.js:75-85` |
-| **Check-out (OUT)** | Tindakan mencatat kepulangan; **tidak** mengubah `status` yang sudah ditetapkan saat IN | `attendance.js:94+` |
-| **Tanggal kerja (`work_date`)** | Tanggal (YYYY-MM-DD) di zona `Asia/Jakarta` saat IN terjadi; menjadi kunci keunikan | `utils/time.js:7` |
-| **Jam kerja** | 08:00 WIB (`config.js:22`) | `config.js` |
-| **Toleransi keterlambatan** | 15 menit (`config.js:23`); batas = 08:15 | `utils/time.js:19-23` |
-| **Keterlambatan** | Kondisi saat waktu IN **lebih besar** dari 08:15; 08:15 tepat masih tepat waktu | `utils/time.js:22` |
+| **Check-in (IN)** | Tindakan mencatat kedatangan: menyimpan jam, foto, koordinat, office, dan jarak | `app/Http/Controllers/Api/AttendanceController.php:150-187` |
+| **Check-out (OUT)** | Tindakan mencatat kepulangan; **tidak** mengubah `status` yang sudah ditetapkan saat IN | `app/Http/Controllers/Api/AttendanceController.php:189-214` |
+| **Tanggal kerja (`work_date`)** | Tanggal (YYYY-MM-DD) di zona `Asia/Jakarta` saat IN terjadi; menjadi kunci keunikan | `app/Services/TimeService.php:24-29` |
+| **Jam kerja** | 08:00 WIB (`app/Services/TimeService.php:11`) | `app/Services/TimeService.php`, `.env.example` |
+| **Toleransi keterlambatan** | 15 menit (`app/Services/TimeService.php:12`); batas = 08:15 | `app/Services/TimeService.php:38-47`, `app/Services/TimeService.php:49-56` |
+| **Keterlambatan** | Kondisi saat waktu IN **lebih besar** dari 08:15; 08:15 tepat masih tepat waktu | `app/Services/TimeService.php:49-56` |
 | **Office** | Lokasi fisik dengan koordinat dan radius yang sah untuk absensi | tabel `offices` |
-| **Radius** | Jarak maksimum (meter) dari office agar absensi diterima; 10–5000 m | `offices.js` |
-| **Geofence** | Penerapan radius: absensi di luar radius ditolak `OUTSIDE_RADIUS` | `attendance.js:40-41` |
-| **Jarak (`distance_m`)** | Jarak hasil hitung Haversine antara koordinat karyawan dan office | `utils/geo.js` |
-| **Foto bukti** | Berkas gambar dari kamera saat IN/OUT; wajib ada | `middleware/upload.js` |
-| **Bukti yatim** | Berkas yang sudah terunggah tetapi transaksi ditolak; harus dihapus | `attendance.js:50` |
-| **Karyawan aktif** | `employees.status = 'ACTIVE'`; hanya mereka yang dapat login & absen | `attendance.js:54-57` |
-| **Kredensial awal** | Password acak yang ditampilkan **sekali** saat akun dibuat | `employees.js:73`, `admins.js:44` |
+| **Radius** | Jarak maksimum (meter) dari office agar absensi diterima; 10–5000 m | `app/Http/Controllers/Api/OfficeController.php` |
+| **Geofence** | Penerapan radius: absensi di luar radius ditolak `OUTSIDE_RADIUS` | `app/Http/Controllers/Api/AttendanceController.php:86-98` |
+| **Jarak (`distance_m`)** | Jarak hasil hitung Haversine antara koordinat karyawan dan office | `app/Services/GeoService.php` |
+| **Foto bukti** | Berkas gambar dari kamera saat IN/OUT; wajib ada | `app/Http/Controllers/Api/AttendanceController.php:38-121` |
+| **Bukti yatim** | Berkas yang sudah terunggah tetapi transaksi ditolak; harus dihapus | `app/Http/Controllers/Api/AttendanceController.php:173-183` |
+| **Karyawan aktif** | `employees.status = 'ACTIVE'`; hanya mereka yang dapat login & absen | `app/Http/Controllers/Api/AttendanceController.php:23-36` |
+| **Kredensial awal** | Password acak yang ditampilkan **sekali** saat akun dibuat | `app/Http/Controllers/Api/EmployeeController.php:182-185`, `app/Http/Controllers/Api/AdminController.php:102-105` |
 
 ---
 
@@ -52,9 +52,9 @@ Hanya **dua** nilai ini yang pernah masuk kolom `status`. Nilai lain tidak sah.
 
 | Nilai | Arti | Sumber |
 |---|---|---|
-| `BELUM_IN` | Belum ada catatan absensi hari ini | `attendance.js:66` |
-| `SUDAH_IN` | Sudah IN, belum OUT | `attendance.js:66` |
-| `SUDAH_OUT` | Sudah IN dan sudah OUT | `attendance.js:66` |
+| `BELUM_IN` | Belum ada catatan absensi hari ini | `app/Http/Controllers/Api/AttendanceController.php:132` |
+| `SUDAH_IN` | Sudah IN, belum OUT | `app/Http/Controllers/Api/AttendanceController.php:132` |
+| `SUDAH_OUT` | Sudah IN dan sudah OUT | `app/Http/Controllers/Api/AttendanceController.php:132` |
 
 Muncul pada `GET /api/attendance/today` bersama `can_check_in` dan `can_check_out`.
 
@@ -67,10 +67,10 @@ Muncul pada `GET /api/attendance/today` bersama `can_check_in` dan `can_check_ou
 
 ### 2.4 Nilai filter `status` yang diterima API
 
-`TEPAT_WAKTU`, `TERLAMBAT`, `BELUM_OUT`, `SUDAH_OUT`, `BELUM_IN` (`attendance.js:15`).
+`TEPAT_WAKTU`, `TERLAMBAT`, `BELUM_OUT`, `SUDAH_OUT`, `BELUM_IN` (`app/Http/Controllers/Api/AttendanceController.php:20`).
 
 - `BELUM_OUT`/`SUDAH_OUT` adalah **filter**, bukan nilai tersimpan.
-- `BELUM_IN` hanya berlaku untuk **satu tanggal** (`attendance.js:119`).
+- `BELUM_IN` hanya berlaku untuk **satu tanggal** (`app/Http/Controllers/Api/AttendanceController.php:272-275`).
 
 ```mermaid
 flowchart LR
@@ -93,8 +93,8 @@ flowchart LR
 |---|---|---|---|
 | **HR Admin** | Peran pengguna Web HR; dapat mengelola karyawan, office, dan melihat semua absensi | — | `users.role = 'HR'` |
 | **Employee** | Peran pengguna aplikasi/klien API; hanya data sendiri | — | `users.role = 'EMPLOYEE'` |
-| **`account_code`** | Kode akun HR | `HR01`, `HR02` | `utils/hr-code.js` |
-| **`employee_code`** | Kode karyawan | `ky01`, `ky02` | `employees.js:28` |
+| **`account_code`** | Kode akun HR | `HR01`, `HR02` | `app/Services/HrCodeService.php` |
+| **`employee_code`** | Kode karyawan | `ky01`, `ky02` | `app/Http/Controllers/Api/EmployeeController.php:44-50` |
 | **`employee_id`** | Kunci numerik karyawan | `1`, `2` | `employees.id` |
 | **`user_id`** | Kunci numerik akun | `1`, `2` | `users.id` |
 
@@ -106,21 +106,21 @@ flowchart LR
 
 | Istilah | Arti di proyek ini | Rujukan |
 |---|---|---|
-| **JWT** | Token akses bertanda tangan; berisi `sub` (id user) dan `role` | `auth.js:19` |
-| **Bearer token** | Format header `Authorization: Bearer <token>` | `middleware/auth.js:9` |
-| **Middleware `auth`** | Memverifikasi token dan memuat user dari DB; gagal → 401 | `auth.js:7-19` |
-| **`requireRole`** | Membatasi endpoint pada satu peran; gagal → 403 | `auth.js:21-22` |
+| **JWT** | Token akses bertanda tangan; berisi `sub` (id user) dan `role` | `app/Http/Controllers/Api/AuthController.php:43-46` |
+| **Bearer token** | Format header `Authorization: Bearer <token>` | `app/Http/Middleware/JwtAuth.php:23` |
+| **Middleware `auth`** | Memverifikasi token dan memuat user dari DB; gagal → 401 | `app/Http/Middleware/JwtAuth.php:20-42` |
+| **`requireRole`** | Membatasi endpoint pada satu peran; gagal → 403 | `app/Http/Middleware/RequireRole.php:11-19` |
 | **Auth Gate** | Invarian: semua fitur wajib login; hanya login & health yang publik | `01-SRS.md` §0 |
-| **bcrypt** | Algoritma hash password (cost 10) | `admins.js`, `employees.js` |
-| **multer** | Pustaka unggah berkas; menangani `multipart/form-data` | `middleware/upload.js` |
-| **multipart** | Format permintaan untuk mengirim berkas + field teks | `attendance.js:46-52` |
-| **SQLite** | Basis data berkas tunggal | `src/db.js` |
-| **`node:sqlite`** | Modul SQLite bawaan Node ≥ 22.13 (tanpa kompilasi) | `package.json` |
-| **WAL** | Mode jurnal SQLite yang dipakai (`journal_mode = WAL`) | `db.js` |
-| **`PRAGMA user_version`** | Penanda versi skema untuk migrasi bertahap (1 → 3) | `db.js` |
-| **`ON DELETE CASCADE`** | Menghapus baris turunan otomatis | `db.js` |
-| **Seed** | Data awal: akun HR + satu office demo | `src/seed.js` |
-| **`serialize`** | Fungsi yang mengubah baris DB menjadi bentuk respons API | `attendance.js:18-26` |
+| **bcrypt** | Algoritma hash password (cost 10) | `app/Http/Controllers/Api/AdminController.php`, `app/Http/Controllers/Api/EmployeeController.php` |
+| **unggah berkas (Laravel)** | Penanganan `multipart/form-data` lewat `$request->file('photo')` dan `UploadedFile` | `app/Http/Controllers/Api/AttendanceController.php:38-121` |
+| **multipart** | Format permintaan untuk mengirim berkas + field teks | `app/Http/Controllers/Api/AttendanceController.php:159`, `app/Http/Controllers/Api/AttendanceController.php:173-183` |
+| **SQLite** | Basis data berkas tunggal | `database/migrations/` |
+| **Eloquent** | ORM Laravel; model `User`, `Employee`, `Office`, `Attendance` | `app/Models/` |
+| **`journal_mode`** | Mode jurnal SQLite; Laravel memakai `delete` (bukan WAL) | `database/migrations/` |
+| **Migrasi** | Berkas `database/migrations/*.php` yang membentuk skema; versi dilacak tabel `migrations` | `database/migrations/` |
+| **`ON DELETE CASCADE`** | Menghapus baris turunan otomatis | `database/migrations/` |
+| **Seed** | Data awal: akun HR + satu office demo | `database/seeders/` |
+| **`serialize`** | Fungsi yang mengubah baris DB menjadi bentuk respons API | `app/Models/Attendance.php:53-79` |
 | **CSV** | Berkas ekspor dipisah koma dari Web HR | `public/app.js` |
 
 ---
@@ -209,22 +209,22 @@ flowchart LR
 
 | Kode | HTTP | Arti | Sumber |
 |---|---|---|---|
-| `UNAUTHORIZED` | 401 | Token tidak ada / tidak valid / user hilang | `auth.js:10,13,16` |
-| `FORBIDDEN` | 403 | Peran tidak sesuai atau data milik orang lain | `auth.js:22`, `attendance.js:145,158` |
-| `INVALID_CREDENTIALS` | 401 | Email/password salah | `auth.js:15-16` |
-| `ACCOUNT_INACTIVE` | 403 | Karyawan nonaktif | `auth.js:17-18`, `attendance.js:56` |
+| `UNAUTHORIZED` | 401 | Token tidak ada / tidak valid / user hilang | `app/Http/Middleware/JwtAuth.php:23-25`, `app/Http/Middleware/JwtAuth.php:28-31`, `app/Http/Middleware/JwtAuth.php:33-36` |
+| `FORBIDDEN` | 403 | Peran tidak sesuai atau data milik orang lain | `app/Http/Middleware/RequireRole.php:14-16`, `app/Http/Controllers/Api/AttendanceController.php:370-372`, `app/Http/Controllers/Api/AttendanceController.php:391-394` |
+| `INVALID_CREDENTIALS` | 401 | Email/password salah | `app/Http/Controllers/Api/AuthController.php:35-37` |
+| `ACCOUNT_INACTIVE` | 403 | Karyawan nonaktif | `app/Http/Controllers/Api/AuthController.php:39-41`, `app/Http/Controllers/Api/AttendanceController.php:31-33` |
 | `VALIDATION` | 400 | Input tidak sah | berbagai route |
-| `ALREADY_CHECKED_IN` | 409 | Sudah IN hari ini | `attendance.js:79` |
-| `NOT_CHECKED_IN` | 409 | OUT tanpa IN | `attendance.js` |
-| `ALREADY_CHECKED_OUT` | 409 | Sudah OUT | `attendance.js` |
-| `PHOTO_REQUIRED` | 400 | Foto tidak dilampirkan | `attendance.js` |
-| `INVALID_PHOTO` | 400 | Ukuran/tipe tidak sah | `upload.js`, `app.js:24` |
-| `GPS_REQUIRED` | 400 | Koordinat tidak ada/tidak sah | `attendance.js` |
-| `OUTSIDE_RADIUS` | 403 | Di luar radius office | `attendance.js:40` |
-| `NO_OFFICE` | 409 | Tidak ada office aktif | `attendance.js` |
-| `DUPLICATE_CODE` | 409 | `employee_code` sudah dipakai | `employees.js` |
-| `DUPLICATE_EMAIL` | 409 | Email sudah dipakai | `employees.js`, `admins.js` |
-| `NOT_FOUND` | 404 | Data/endpoint tidak ada | `app.js:20` |
+| `ALREADY_CHECKED_IN` | 409 | Sudah IN hari ini | `app/Http/Controllers/Api/AttendanceController.php:155-157` |
+| `NOT_CHECKED_IN` | 409 | OUT tanpa IN | `app/Http/Controllers/Api/AttendanceController.php` |
+| `ALREADY_CHECKED_OUT` | 409 | Sudah OUT | `app/Http/Controllers/Api/AttendanceController.php` |
+| `PHOTO_REQUIRED` | 400 | Foto tidak dilampirkan | `app/Http/Controllers/Api/AttendanceController.php` |
+| `INVALID_PHOTO` | 400 | Ukuran/tipe tidak sah | `app/Http/Controllers/Api/AttendanceController.php:38-121`, `app/Exceptions/Handler.php:52-64` |
+| `GPS_REQUIRED` | 400 | Koordinat tidak ada/tidak sah | `app/Http/Controllers/Api/AttendanceController.php` |
+| `OUTSIDE_RADIUS` | 403 | Di luar radius office | `app/Http/Controllers/Api/AttendanceController.php:86-98` |
+| `NO_OFFICE` | 409 | Tidak ada office aktif | `app/Http/Controllers/Api/AttendanceController.php` |
+| `DUPLICATE_CODE` | 409 | `employee_code` sudah dipakai | `app/Http/Controllers/Api/EmployeeController.php` |
+| `DUPLICATE_EMAIL` | 409 | Email sudah dipakai | `app/Http/Controllers/Api/EmployeeController.php`, `app/Http/Controllers/Api/AdminController.php` |
+| `NOT_FOUND` | 404 | Data/endpoint tidak ada | `app/Exceptions/Handler.php:29-38` |
 
 ---
 

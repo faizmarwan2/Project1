@@ -123,7 +123,7 @@ Contoh: `BUG-20261118-01`
 | Tanggal | YYYY-MM-DD |
 | Pelapor | |
 | Build | commit / waktu build |
-| Lingkungan | OS, Node, browser/klien |
+| Lingkungan | OS, runtime (PHP/Laravel + Node bila menyangkut siklus lama), browser/klien |
 | Modul | AUTH / EMP / ADM / OFF / ATT / HIS / DSH / WEB |
 | FR terkait | FR-xxx-NN |
 | Test case | TC-<MOD>-<NN> |
@@ -170,7 +170,7 @@ Contoh: `BUG-20261118-01`
 | Tanggal | 2026-11-18 |
 | Pelapor | QA |
 | Build | lokal, 18 Nov 2026 09:10 |
-| Lingkungan | Windows 11, Node 22.13, curl |
+| Lingkungan | Windows 11, PHP 8.5 + Laravel 10, curl |
 | Modul | ATT |
 | FR terkait | FR-ATT-03 |
 | Test case | TC-ATT-02 |
@@ -204,19 +204,23 @@ Kehadiran ganda; dashboard dan rekap menjadi salah. Tidak ada workaround.
 
 ---
 
+> **Status per 19 November 2026 (implementasi Laravel):** dari tiga temuan di atas, **BUG-03 sudah tertutup** — `HrSeeder` hanya mencetak email, bukan password (`database/seeders/HrSeeder.php:36-37`). **BUG-01 tetap terbuka** dan sudah diverifikasi ulang pada Laravel (header tetap tidak ada). **BUG-02** hanya relevan pada `public/app.js` (masih dipakai Laravel lewat `routes/web.php:13-19`) dan belum diperbaiki. Rincian perubahan lain ada di `16-Security-Test-Checklist.md` §13.
+
+---
+
 ## 8A. Defect Tercatat (Hasil Eksekusi 18 November 2026)
 
-Tiga temuan berikut berasal dari eksekusi nyata terhadap server lokal (Node v22.23.2, database QA terpisah), bukan dari perkiraan. Ketiganya direproduksi pada commit `1c819f5`; berkas yang terlibat (`src/seed.js`, `public/app.js`, `src/app.js`) tidak berubah di `47adb6b`. **Semuanya di luar 61 test case** — tidak satu pun menggagalkan alur bisnis, sehingga seluruh TC tetap `Lulus`. Temuan yang sama juga tercatat sebagai blok `BUG-…` pada sheet `AUTH` dan `EMP` di `docs/Project A - QA Test Cases.xlsx`.
+Tiga temuan berikut berasal dari eksekusi nyata terhadap server lokal (Node v22.23.2, database QA terpisah), bukan dari perkiraan. Ketiganya direproduksi pada commit `1c819f5`; berkas yang terlibat (`database/seeders/`, `public/app.js`, `app/Http/Kernel.php` + `routes/api.php`) tidak berubah di `47adb6b`. **Semuanya di luar 61 test case** — tidak satu pun menggagalkan alur bisnis, sehingga seluruh TC tetap `Lulus`. Temuan yang sama juga tercatat sebagai blok `BUG-…` pada sheet `AUTH` dan `EMP` di `docs/Project A - QA Test Cases.xlsx`.
 
 ### 8A.1 Ringkasan
 
 | ID | Judul | Modul | Severity | Priority | Status |
 |---|---|---|---|---|---|
-| BUG-01 | Respons web tidak memuat header keamanan HTTP | WEB | S3 (Medium) | P3 | `Baru` |
+| BUG-01 | Respons web tidak memuat header keamanan HTTP | WEB | S3 (Medium) | P3 | `Baru` (terverifikasi ulang di Laravel 19 Nov) |
 | BUG-02 | `TypeError` saat sesi berakhir ketika daftar sedang dimuat | WEB | S4 (Low) | P3 | `Baru` |
-| BUG-03 | Kredensial HR tercetak pada log saat seeding | AUTH | S2 (High) | P2 | `Baru` |
+| BUG-03 | Kredensial HR tercetak pada log saat seeding | AUTH | S2 (High) | P2 | `Tertutup` 19 Nov 2026 |
 
-Tidak ada defect **S1**. BUG-01 dan BUG-02 bersifat konfigurasi/kenyamanan; BUG-03 menyangkut kebiasaan operasional, bukan kebocoran data ke pengguna.
+Tidak ada defect **S1**. BUG-01 dan BUG-02 bersifat konfigurasi/kenyamanan; BUG-03 sudah diperbaiki di seeder Laravel (`database/seeders/HrSeeder.php:36-37`).
 
 ### 8A.2 BUG-01 — Respons web tidak memuat header keamanan HTTP
 
@@ -231,24 +235,24 @@ Tidak ada defect **S1**. BUG-01 dan BUG-02 bersifat konfigurasi/kenyamanan; BUG-
 | Test case | Di luar TC; pemeriksaan ST-44 |
 | Severity | S3 |
 | Priority | P3 |
-| Status | `Baru` |
+| Status | `Baru` (terverifikasi ulang pada Laravel, 19 Nov 2026) |
 
 **Langkah reproduksi**
-1. Jalankan server (`npm start`).
+1. Jalankan server (`php artisan serve`).
 2. Minta `GET /` beserta endpoint API mana pun.
 3. Periksa header respons: `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, `Referrer-Policy`.
 
-**Hasil yang diharapkan** — Header keamanan standar tersedia (mis. `helmet`) untuk mencegah clickjacking, MIME sniffing, dan pembatasan sumber daya.
+**Hasil yang diharapkan** — Header keamanan standar tersedia (middleware header sendiri, karena Laravel tidak menyediakannya secara bawaan) untuk mencegah clickjacking, MIME sniffing, dan pembatasan sumber daya.
 
-**Hasil aktual** — `x-content-type-options=null`, `x-frame-options=null`, `content-security-policy` tidak ada, `referrer-policy=null`. Tidak ada perlindungan clickjacking, MIME sniffing, maupun CSP.
+**Hasil aktual** — `x-content-type-options=null`, `x-frame-options=null`, `content-security-policy` tidak ada, `referrer-policy=null`. Tidak ada perlindungan clickjacking, MIME sniffing, maupun CSP. Diverifikasi ulang pada server Laravel 19 Nov 2026: hasil identik.
 
-**Bukti** — `hasil-extra.json#AUTH-18`, `hasil-sec.json#ST-44`.
+**Bukti** — `hasil-extra.json#AUTH-18`, `hasil-sec.json#ST-44` (siklus Node); verifikasi ulang Laravel tercatat di `16-Security-Test-Checklist.md` §13.
 
 **Dampak** — Halaman Web HR dapat dirender dalam iframe pihak lain dan berkas unggahan diperlakukan longgar oleh browser lama. Tidak ada data lintas pengguna yang terbuka; invarian login (§0 `01-SRS.md`) tetap utuh karena seluruh endpoint sudah menolak tanpa token.
 
 **Catatan triase**
 - Keputusan: diterima, ditunda setelah demo
-- Alasan: perbaikan satu baris di `src/app.js` (middleware header) atau menambah `helmet`
+- Alasan: perbaikan terpusat sebagai middleware header di `app/Http/Kernel.php` (grup `api`/`web`)
 - Ditugaskan ke: Dev backend
 - Target perbaikan: sebelum produksi
 
@@ -291,7 +295,7 @@ Tidak ada defect **S1**. BUG-01 dan BUG-02 bersifat konfigurasi/kenyamanan; BUG-
 | Atribut | Nilai |
 |---|---|
 | Tanggal | 2026-11-18 |
-| Pelapor | QA (pemindaian `src/**/*.js`) |
+| Pelapor | QA (pemindaian seluruh berkas sumber saat siklus Node) |
 | Build | commit `1c819f5`, lokal |
 | Lingkungan | Windows 11, Node v22.23.2 |
 | Modul | AUTH |
@@ -299,25 +303,25 @@ Tidak ada defect **S1**. BUG-01 dan BUG-02 bersifat konfigurasi/kenyamanan; BUG-
 | Test case | Di luar TC; pemeriksaan ST-25 |
 | Severity | S2 |
 | Priority | P2 |
-| Status | `Baru` |
+| Status | `Tertutup` — 19 Nov 2026 (seeder Laravel tidak mencetak password) |
 
 **Langkah reproduksi**
-1. Jalankan server dengan database tanpa akun HR sehingga seed berjalan otomatis.
-2. Periksa stdout proses server.
+1. Jalankan `php artisan db:seed` pada database tanpa akun HR.
+2. Periksa stdout proses.
 
 **Hasil yang diharapkan** — Log hanya menyebutkan bahwa akun HR dibuat, tanpa email dan password.
 
-**Hasil aktual** — `src/seed.js` mencetak `[seed] HR admin: <email> / <password>` sehingga password HR muncul utuh di konsol. Pemindaian 18 berkas `src/**/*.js` menemukan ini satu-satunya baris log yang memuat kredensial.
+**Hasil aktual (siklus Node, 18 Nov)** — Seeder Node mencetak `[seed] HR admin: <email> / <password>` sehingga password HR muncul utuh di konsol. **Perbaikan Laravel (19 Nov):** `database/seeders/HrSeeder.php:36-37` hanya menulis `Akun HR dibuat: <email> (password dari HR_PASSWORD / .env)`; password tidak lagi muncul. Diverifikasi dengan menjalankan `php artisan db:seed --force` dua kali: baris log tidak memuat password.
 
-**Bukti** — `hasil-sec2.json#ST-25`.
+**Bukti** — `hasil-sec2.json#ST-25` (siklus Node); verifikasi ulang Laravel di `16-Security-Test-Checklist.md` §13.
 
-**Dampak** — Tidak bocor ke klien, tetapi terbaca oleh siapa pun yang dapat melihat log konsol/CI (mis. saat demo di proyektor atau log pipeline). Workaround: hapus baris log sebelum demo.
+**Dampak** — Tidak bocor ke klien, tetapi terbaca oleh siapa pun yang dapat melihat log konsol/CI. Kini hanya email yang tampil, sehingga risiko kebocoran kredensial hilang.
 
 **Catatan triase**
-- Keputusan: diterima
-- Alasan: melanggar NFR-04; perbaikan satu baris (cetak `[seed] akun HR dibuat`)
+- Keputusan: **ditutup** setelah cleanup
+- Alasan: melanggar NFR-04; diperbaiki di seeder Laravel (tidak mencetak password)
 - Ditugaskan ke: Dev backend
-- Target perbaikan: sebelum demo (P2)
+- Target perbaikan: selesai 19 Nov 2026
 
 ---
 
@@ -334,14 +338,14 @@ Agar QA tidak salah mencatat, hal berikut **sudah dinyatakan** di dokumen dan **
 | Tidak ada `DELETE /api/offices` | Hanya nonaktifkan | GAP-08 |
 | Ekspor CSV maksimum 5.000 baris | Batas 25 halaman × 200 | `07-User-Story.md` US-27 |
 | Tidak ada `updated_at` | Belum dirancang | GAP-05 |
-| Tidak ada rate limit login | Gap keamanan yang diakui | GAP-06 |
+| Tidak ada rate limit khusus login | Limiter `api` 60/menit berlaku, tetapi tidak ada batas percobaan kredensial tersendiri | GAP-06 |
 | Password awal hanya tampil sekali | Keputusan keamanan | FR-EMP-03 |
 | Foto disimpan di disk lokal | Keterbatasan lingkungan | GAP-07 |
 | Dashboard tidak real-time (60 detik) | Keputusan desain | FR-DSH-03 |
 | Status `BELUM_*` tidak tersimpan di DB | Status turunan, bukan kolom | `04-ERD.md` §4 |
-| Dua implementasi (Node + Laravel) dalam satu repo | Node `src/` adalah baseline yang diuji; Laravel `app/` belum diuji | D-10, D-12, GAP-09 |
-| `README` menyebut 9 tes, aktual 10 | Dokumentasi tidak sinkron | D-09, GAP-10 |
-| Server gagal jalan di Node < 22.13 | Batasan runtime, bukan bug kode | RISK-01 |
+| ~~Dua implementasi (Node + Laravel) dalam satu repo~~ | **Ditutup 19 Nov 2026**: Node dihapus, repo hanya Laravel | D-10, D-12, GAP-09 |
+| `README` menyebut 9 tes, aktual 5 metode/27 assertion | Dokumentasi sudah disinkronkan 19 Nov 2026 | D-09, GAP-10 |
+| Server gagal jalan di Node < 22.13 | Batasan runtime siklus lama; tidak berlaku di Laravel | RISK-01 (historis) |
 
 **Namun:** bila salah satu hal di atas **berubah perilaku** tanpa keputusan (mis. endpoint office tiba-tiba menghapus data, atau foto tampil tanpa token), itu **defect baru**.
 
@@ -397,11 +401,11 @@ Angka ini **usulan** untuk proyek magang 3 hari; sesuaikan dengan kesepakatan me
 | Perubahan | Wajib menjalankan ulang |
 |---|---|
 | Perbaikan S1/S2 | TC terkait + **smoke pack 13 TC** (`10-Test-Case.md` §2) |
-| Perubahan `auth`/`requireRole` | TC-AUTH-01, TC-AUTH-06, TC-AUTH-09 + seluruh endpoint yang terpengaruh |
-| Perubahan `attendance.js` | `TC-ATT-01` … `TC-ATT-14` |
-| Perubahan `db.js` | TC-EMP-01, TC-ATT-02, TC-ATT-14 + pemeriksaan migrasi |
+| Perubahan `jwt.auth`/`role` | TC-AUTH-01, TC-AUTH-06, TC-AUTH-09 + seluruh endpoint yang terpengaruh |
+| Perubahan `app/Http/Controllers/Api/AttendanceController.php` | `TC-ATT-01` … `TC-ATT-14` |
+| Perubahan `database/migrations/` | TC-EMP-01, TC-ATT-02, TC-ATT-14 + pemeriksaan migrasi |
 | Perubahan `public/app.js` | TC-AUTH-09, TC-WEB-01, TC-WEB-02 |
-| Perubahan `utils/time.js` | TC-ATT-01, TC-ATT-13 + TC-HIS-10 (status di dashboard) |
+| Perubahan `app/Services/TimeService.php` | TC-ATT-01, TC-ATT-13 + TC-HIS-10 (status di dashboard) |
 
 ### 12.2 Bukti regresi
 
@@ -425,7 +429,7 @@ Setiap penutupan defect wajib memuat:
 | Waktu perbaikan S1 | rata-rata jam | ≤ 1 hari |
 | Defect terbuka saat demo | jumlah S1 + S2 | S1 = 0, S2 ≤ 1 |
 
-**Aktual (18 November 2026):** defect density = 3 / 63 = **0,05** (target ≤ 0,2 → terpenuhi); defect terbuka saat demo = **1** (BUG-03, S2) sehingga masih dalam batas. Seluruh defect berasal dari eksekusi internal, bukan dari UAT, sehingga *defect leakage* belum dapat dihitung.
+**Aktual (18 November 2026, diperbarui 19 November 2026):** defect density = 3 / 63 = **0,05** (target ≤ 0,2 → terpenuhi); defect terbuka saat demo = **0** defect S2 (BUG-03 ditutup 19 Nov 2026), menyisakan BUG-01 (S3) dan BUG-02 (S4) yang diterima sebagai catatan. Seluruh defect berasal dari eksekusi internal, bukan dari UAT, sehingga *defect leakage* belum dapat dihitung.
 
 ---
 
@@ -447,7 +451,7 @@ Setiap penutupan defect wajib memuat:
 Sebelum menyatakan siklus selesai:
 
 - [ ] Semua defect S1 berstatus `Ditutup`. — **tidak ada defect S1**
-- [ ] Semua defect S2 `Ditutup` atau `Ditunda` dengan persetujuan mentor. — **BUG-03 masih `Baru`**
+- [x] Semua defect S2 `Ditutup` atau `Ditunda` dengan persetujuan mentor. — **BUG-03 ditutup 19 Nov 2026**
 - [ ] Seluruh penutupan memiliki bukti regresi. — belum ada penutupan
 - [ ] Daftar §9 ditinjau: tidak ada yang berubah menjadi defect tanpa catatan. — ditinjau 18 Nov 2026, tidak ada perubahan
 - [ ] Rekap dimasukkan ke laporan QA (`QA-REPORT-<tanggal>.md`). — lihat `18-Test-Summary-Report.md`

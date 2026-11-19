@@ -3,10 +3,10 @@
 
 | Item | Nilai |
 |---|---|
-| Versi | 2.0 (build) |
-| Tanggal | 18 November 2026 |
+| Versi | 2.2 (build) |
+| Tanggal | 19 November 2026 |
 | Produk | Workforce Attendance System — Tim A |
-| Acuan | `docs/ETHES_TECH Project.docx` (Bab 1, 3, 4, 5) · `README.md` · kode `src/` · Web `public/` · tes `test/` |
+| Acuan | `docs/ETHES_TECH Project.docx` (Bab 1, 3, 4, 5) · `README.md` · kode `app/` + `routes/api.php` · `database/` · Web `public/` · tes `tests/Feature/` |
 | Folder | `docs/project-a/` |
 | Status | Final draft untuk review mentor |
 
@@ -25,17 +25,20 @@ Pernyataan di atas bukan saran desain, melainkan perilaku yang sudah berjalan di
 
 | Lapisan | Berkas | Perilaku |
 |---|---|---|
-| Middleware | `src/middleware/auth.js:7-19` | Membaca header `Authorization: Bearer <token>`. Tidak ada token → `401 UNAUTHORIZED`. `jwt.verify` gagal → `401 UNAUTHORIZED`. User tidak ditemukan → `401`. |
-| Middleware | `src/middleware/auth.js:21-22` | `requireRole(role)` → role tidak sesuai → `403 FORBIDDEN`. |
-| Route HR | `src/routes/employees.js:11`, `admins.js:10`, `dashboard.js:7` | `router.use(auth, requireRole('HR'))` — seluruh route butuh login **dan** role HR. |
-| Route absensi | `src/routes/attendance.js:13` | `router.use(auth)`; `requireRole('EMPLOYEE')` pada `today`, `check-in`, `check-out`; `requireRole('HR')` pada daftar absensi. |
-| Route office | `src/routes/offices.js:7` | `router.use(auth)`; POST/PUT ditambah `requireRole('HR')`. |
+| Middleware | `app/Http/Middleware/JwtAuth.php:20-42` | Membaca header `Authorization: Bearer <token>`. Tidak ada token → `401 UNAUTHORIZED`. Token gagal diverifikasi → `401 UNAUTHORIZED`. User tidak ditemukan → `401`. |
+| Middleware | `app/Http/Middleware/RequireRole.php:11-19` | `role:<peran>` → role tidak sesuai → `403 FORBIDDEN`. |
+| Route HR | `routes/api.php:29-32`, `routes/api.php:35-42`, `routes/api.php:64-66` | Grup `role:HR` — seluruh route butuh login **dan** role HR. |
+| Route absensi | `routes/api.php:45-60` | Grup `jwt.auth`; `role:EMPLOYEE` pada `today`, `check-in`, `check-out`; `role:HR` pada daftar absensi. |
+| Route office | `routes/api.php:22-26` | `GET` terbuka untuk user login; POST/PUT di grup `role:HR`. |
 | Web HR | `public/app.js:111` | Tanpa token tersimpan → `renderLogin()`; seluruh halaman lain tidak dirender. |
 | Web HR | `public/app.js:24` | Respons `401` (selain `/login`) → `logout()`, kembali ke layar Login. |
 | Web HR | `public/app.js:100,112` | Akun dengan role bukan `HR` ditolak di Web: "Akun ini bukan HR. Karyawan login lewat aplikasi mobile." |
 | Web HR | `public/app.js:56-59` | Tombol "Keluar" menghapus token, menghentikan timer, menutup modal, menampilkan Login. |
 
-> **Catatan dua implementasi (18 Nov 2026):** tabel di atas merujuk implementasi Node di `src/`. Sejak commit `3ee2b7a` repo juga memuat implementasi Laravel paralel yang menerapkan gerbang sama — `routes/api.php:18` (`Route::middleware('jwt.auth')`), `routes/api.php:23,29,35,47,60,64` (pembatasan peran), `app/Http/Middleware/JwtAuth.php`. Invarian §0 karenanya berlaku pada kedua tumpukan; rujukan baris `src/**` tetap sah karena berkas itu tidak berubah.
+> **Catatan (19 Nov 2026):** repo kini hanya memuat **satu** implementasi, yaitu Laravel 10
+> (`app/`, `routes/api.php`). Implementasi Node yang menjadi baseline pengujian 18 Nov 2026
+> sudah dihapus; seluruh rujukan baris di tabel di atas sudah dipetakan ke kode Laravel.
+> Alias middleware didaftarkan di `app/Http/Kernel.php:66-67`.
 
 ### 0.2 Satu-satunya Pengecualian
 
@@ -46,7 +49,7 @@ Pernyataan di atas bukan saran desain, melainkan perilaku yang sudah berjalan di
 | Aset statis Web (`/index.html`, `/app.js`, `/app.css`, favicon) | Publik (kerangka UI) | Boleh dimuat, tetapi **tidak ada data** yang tampil; layar Login yang dirender |
 | Semua endpoint `/api/**` lainnya | **Terproteksi** | `401 UNAUTHORIZED` |
 
-Endpoint foto `GET /api/attendance/:id/photo/:type` **bukan** pengecualian: tetap memerlukan token, dan role `EMPLOYEE` hanya boleh mengakses foto miliknya (`src/routes/attendance.js:155-162`).
+Endpoint foto `GET /api/attendance/:id/photo/:type` **bukan** pengecualian: tetap memerlukan token, dan role `EMPLOYEE` hanya boleh mengakses foto miliknya (`app/Http/Controllers/Api/AttendanceController.php:373-397`).
 
 ### 0.3 Konsekuensi pada Seluruh Dokumen
 
@@ -109,8 +112,8 @@ Fitur dalam ruang lingkup:
 |---|---|
 | REF-01 | `docs/ETHES_TECH Project.docx` — Project A + business rules ATT-01..ATT-08 |
 | REF-02 | `README.md` — kontrak endpoint & aturan bisnis |
-| REF-03 | `src/db.js` — skema basis data |
-| REF-04 | `test/attendance.test.js` — tes otomatis |
+| REF-03 | `database/migrations/` — skema basis data |
+| REF-04 | `tests/Feature/WorkforceAttendanceTest.php` — tes otomatis |
 | REF-05 | `public/app.js` — antarmuka Web HR |
 | REF-06 | `TASK.md` — work order & invarian |
 
@@ -133,8 +136,8 @@ flowchart TB
     ST["Aset statis<br/>index.html · app.js · app.css"]
 
     subgraph GATE["AUTH GATE — wajib token"]
-        MW["middleware auth<br/>token tidak valid → 401"]
-        RG["requireRole<br/>role salah → 403"]
+        MW["middleware jwt.auth<br/>token tidak valid → 401"]
+        RG["middleware role<br/>peran salah → 403"]
     end
 
     E1["/api/me · /api/offices · /api/attendance/*"]
@@ -161,9 +164,9 @@ flowchart TB
     style DENY fill:#fef2f2
 ```
 
-> **Baca diagram:** hanya kotak hijau yang dapat diakses tanpa token. Semua permintaan lain melewati kotak kuning (auth → requireRole) sebelum mencapai endpoint. Jalur putus-putus ke kotak merah adalah akhir alur untuk token/peran yang tidak sah.
+> **Baca diagram:** hanya kotak hijau yang dapat diakses tanpa token. Semua permintaan lain melewati kotak kuning (`jwt.auth` → `role`) sebelum mencapai endpoint. Jalur putus-putus ke kotak merah adalah akhir alur untuk token/peran yang tidak sah.
 
-Web HR disajikan sebagai berkas statis dari `public/` oleh server yang sama (`src/app.js:11`), tanpa proses build.
+Web HR disajikan sebagai berkas statis dari `public/` oleh server yang sama (`routes/web.php:14-20`), tanpa proses build.
 
 ### 2.2 Aktor
 
@@ -202,14 +205,14 @@ Tidak ada aktor ketiga. Tidak ada akses anonim ke data apa pun.
 |---|---|
 | BR-01 | Satu pasang IN/OUT per karyawan per tanggal kerja; shift malam di luar scope |
 | BR-02 | Waktu memakai jam server, bukan jam perangkat |
-| BR-03 | Zona tunggal `Asia/Jakarta` (`src/config.js:20`) |
-| BR-04 | Jam masuk 08:00, toleransi 15 menit (`src/config.js:22-23`) |
+| BR-03 | Zona tunggal `Asia/Jakarta` (`app/Services/TimeService.php:10`) |
+| BR-04 | Jam masuk 08:00, toleransi 15 menit (`app/Services/TimeService.php:11-12`) |
 | BR-05 | Employee tidak boleh mengakses data karyawan lain |
 | BR-06 | Token hilang/tidak valid → 401; klien kembali ke login |
 | BR-07 | Kegagalan request/timeout tidak boleh tampil sebagai sukses |
 | BR-08 | Kredensial demo bukan untuk produksi; `.env` tidak di-commit |
-| BR-09 | Foto wajib, JPEG/PNG/WEBP, maks 5 MB (`src/middleware/upload.js:10-19`) |
-| BR-10 | Koordinat wajib valid: `abs(lat) ≤ 90`, `abs(lng) ≤ 180` (`src/utils/geo.js:8-9`) |
+| BR-09 | Foto wajib, JPEG/PNG/WEBP, maks 5 MB (`app/Http/Controllers/Api/AttendanceController.php:38-109`) |
+| BR-10 | Koordinat wajib valid: `abs(lat) ≤ 90`, `abs(lng) ≤ 180` (`app/Services/GeoService.php:22-25`) |
 | BR-11 | Absensi harus di dalam radius salah satu office aktif |
 | BR-12 | Karyawan `INACTIVE` tidak boleh login maupun absensi |
 
@@ -233,14 +236,14 @@ Prioritas: **M** = Must, **S** = Should, **C** = Could. Rujukan kode disertakan 
 
 | ID | Kebutuhan | Prioritas | Rujukan |
 |---|---|---|---|
-| **FR-AUTH-00** | **Sistem wajib menolak seluruh akses fitur sebelum login.** Semua endpoint `/api/**` kecuali `POST /api/login` memerlukan bearer token valid; tanpa token → `401 UNAUTHORIZED`; role tidak sesuai → `403 FORBIDDEN`. | M | `middleware/auth.js`, `src/app.js:13-18` |
-| FR-AUTH-01 | Login `email` + `password` → `token`, `role`, `user`. | M | `routes/auth.js:10-21` |
-| FR-AUTH-02 | Kredensial salah → `401 INVALID_CREDENTIALS`. | M | `routes/auth.js:15-16` |
-| FR-AUTH-03 | Karyawan `INACTIVE` tidak bisa login → `403 ACCOUNT_INACTIVE`. | M | `routes/auth.js:17-18` |
-| FR-AUTH-04 | Token divalidasi tiap request; tidak ada/tidak valid/kedaluwarsa → `401 UNAUTHORIZED`. | M | `middleware/auth.js:7-19` |
-| FR-AUTH-05 | Otorisasi per peran pada setiap endpoint. | M | `requireRole`, tiap route |
-| FR-AUTH-06 | `GET /api/me` mengembalikan profil + data karyawan terkait. | M | `routes/auth.js:24-29` |
-| FR-AUTH-07 | Token ditandatangani secret server, masa berlaku default `12h`. | M | `config.js:13-14`, `routes/auth.js:19` |
+| **FR-AUTH-00** | **Sistem wajib menolak seluruh akses fitur sebelum login.** Semua endpoint `/api/**` kecuali `POST /api/login` memerlukan bearer token valid; tanpa token → `401 UNAUTHORIZED`; role tidak sesuai → `403 FORBIDDEN`. | M | `app/Http/Middleware/JwtAuth.php`, `routes/api.php:18` |
+| FR-AUTH-01 | Login `email` + `password` → `token`, `role`, `user`. | M | `app/Http/Controllers/Api/AuthController.php:22-58` |
+| FR-AUTH-02 | Kredensial salah → `401 INVALID_CREDENTIALS`. | M | `app/Http/Controllers/Api/AuthController.php:35-37` |
+| FR-AUTH-03 | Karyawan `INACTIVE` tidak bisa login → `403 ACCOUNT_INACTIVE`. | M | `app/Http/Controllers/Api/AuthController.php:39-41` |
+| FR-AUTH-04 | Token divalidasi tiap request; tidak ada/tidak valid/kedaluwarsa → `401 UNAUTHORIZED`. | M | `app/Http/Middleware/JwtAuth.php:20-42` |
+| FR-AUTH-05 | Otorisasi per peran pada setiap endpoint. | M | `middleware('role:...')` di `routes/api.php`, `app/Http/Middleware/RequireRole.php:11-19` |
+| FR-AUTH-06 | `GET /api/me` mengembalikan profil + data karyawan terkait. | M | `app/Http/Controllers/Api/AuthController.php:60-82` |
+| FR-AUTH-07 | Token ditandatangani secret server, masa berlaku default `12h`. | M | `app/Services/JwtService.php:10-15`, `app/Http/Controllers/Api/AuthController.php:43-46` |
 | FR-AUTH-08 | Klien menghapus token dan kembali ke Login saat menerima 401. | M | `public/app.js:24,56-60` |
 
 **Kriteria penerimaan FR-AUTH-00**
@@ -267,86 +270,86 @@ Scenario: Web HR tidak menampilkan data sebelum login
 
 | ID | Kebutuhan | Prioritas | Rujukan |
 |---|---|---|---|
-| FR-EMP-01 | Tambah karyawan dengan `name` saja; kode otomatis `kyNN`. | M | `employees.js:25-29,54-75` |
-| FR-EMP-02 | Email otomatis `nama.depan@ethes.tech`; bentrok diberi sufiks angka. | S | `employees.js:17-24` |
-| FR-EMP-03 | Akun login dibuat bersamaan; password acak 12 karakter ditampilkan **sekali**. | M | `employees.js:14,61,73` |
-| FR-EMP-04 | `employee_code`, `email`, `password` boleh diisi manual; password ≥ 8. | S | `employees.js:57-61` |
-| FR-EMP-05 | Kode duplikat → `409 DUPLICATE_CODE`; email duplikat → `409 DUPLICATE_EMAIL`. | M | `employees.js:63-64` |
-| FR-EMP-06 | Daftar karyawan: `search`, `status`, `page`, `limit` (maks 200). | M | `employees.js:34-45` |
-| FR-EMP-07 | Detail karyawan per ID; tidak ada → `404 NOT_FOUND`. | M | `employees.js:47-51` |
-| FR-EMP-08 | Ubah `name`, `employee_code`, `status`, `email`, `password`. | M | `employees.js:78-101` |
-| FR-EMP-09 | Nonaktifkan karyawan → tidak bisa login & absensi. | M | `employees.js:78-101`, `auth.js:17` |
-| FR-EMP-10 | Hapus karyawan → akun, riwayat, dan foto ikut terhapus. | S | `employees.js:103-122` |
-| FR-EMP-11 | Reset password → password acak baru, tampil sekali. | S | `employees.js:125-131` |
-| FR-EMP-12 | Pembuatan karyawan + akun dalam satu transaksi. | M | `employees.js:66-75` |
+| FR-EMP-01 | Tambah karyawan dengan `name` saja; kode otomatis `kyNN`. | M | `app/Http/Controllers/Api/EmployeeController.php:41-51`, `app/Http/Controllers/Api/EmployeeController.php:130-186` |
+| FR-EMP-02 | Email otomatis `nama.depan@ethes.tech`; bentrok diberi sufiks angka. | S | `app/Http/Controllers/Api/EmployeeController.php:18-39` |
+| FR-EMP-03 | Akun login dibuat bersamaan; password acak 12 karakter ditampilkan **sekali**. | M | `app/Http/Controllers/Api/EmployeeController.php:144-148`, `app/Http/Controllers/Api/EmployeeController.php:182-185` |
+| FR-EMP-04 | `employee_code`, `email`, `password` boleh diisi manual; password ≥ 8. | S | `app/Http/Controllers/Api/EmployeeController.php:137-148` |
+| FR-EMP-05 | Kode duplikat → `409 DUPLICATE_CODE`; email duplikat → `409 DUPLICATE_EMAIL`. | M | `app/Http/Controllers/Api/EmployeeController.php:150-156` |
+| FR-EMP-06 | Daftar karyawan: `search`, `status`, `page`, `limit` (maks 200). | M | `app/Http/Controllers/Api/EmployeeController.php:71-118` |
+| FR-EMP-07 | Detail karyawan per ID; tidak ada → `404 NOT_FOUND`. | M | `app/Http/Controllers/Api/EmployeeController.php:120-128` |
+| FR-EMP-08 | Ubah `name`, `employee_code`, `status`, `email`, `password`. | M | `app/Http/Controllers/Api/EmployeeController.php:188-248` |
+| FR-EMP-09 | Nonaktifkan karyawan → tidak bisa login & absensi. | M | `app/Http/Controllers/Api/EmployeeController.php:188-248`, `app/Http/Controllers/Api/AuthController.php:39-41` |
+| FR-EMP-10 | Hapus karyawan → akun, riwayat, dan foto ikut terhapus. | S | `app/Http/Controllers/Api/EmployeeController.php:250-289` |
+| FR-EMP-11 | Reset password → password acak baru, tampil sekali. | S | `app/Http/Controllers/Api/EmployeeController.php:291-310` |
+| FR-EMP-12 | Pembuatan karyawan + akun dalam satu transaksi. | M | `app/Http/Controllers/Api/EmployeeController.php:158-180` |
 
 ### 3.3 Modul ADM
 
 | ID | Kebutuhan | Prioritas | Rujukan |
 |---|---|---|---|
-| FR-ADM-01 | Daftar akun HR dengan `search` + paginasi. | S | `admins.js:21-30` |
-| FR-ADM-02 | Tambah akun HR; `account_code` otomatis `HRNN`. | S | `admins.js:32-51`, `utils/hr-code.js` |
-| FR-ADM-03 | Email akun HR duplikat → `409 DUPLICATE_EMAIL`. | M | `admins.js:44` |
-| FR-ADM-04 | Akun HR baru langsung bisa login dan mengakses fitur HR. | M | `admins.js:41-51`, `test/attendance.test.js:72-84` |
+| FR-ADM-01 | Daftar akun HR dengan `search` + paginasi. | S | `app/Http/Controllers/Api/AdminController.php:40-77` |
+| FR-ADM-02 | Tambah akun HR; `account_code` otomatis `HRNN`. | S | `app/Http/Controllers/Api/AdminController.php:79-131`, `app/Services/HrCodeService.php` |
+| FR-ADM-03 | Email akun HR duplikat → `409 DUPLICATE_EMAIL`. | M | `app/Http/Controllers/Api/AdminController.php:102-105` |
+| FR-ADM-04 | Akun HR baru langsung bisa login dan mengakses fitur HR. | M | `app/Http/Controllers/Api/AdminController.php:100-131`, `app/Http/Controllers/Api/AttendanceController.php:139-177` |
 
 ### 3.4 Modul OFF
 
 | ID | Kebutuhan | Prioritas | Rujukan |
 |---|---|---|---|
-| FR-OFF-01 | Semua pengguna login dapat melihat office aktif. | M | `offices.js:10-12` |
-| FR-OFF-02 | HR dapat menambah office; `name` wajib, koordinat valid, radius 10–5000 m. | M | `offices.js:14-32` |
-| FR-OFF-03 | HR dapat mengubah office, termasuk `is_active`. | M | `offices.js:34-41` |
-| FR-OFF-04 | Seed awal menyediakan satu office aktif. | M | `src/seed.js:12-17` |
+| FR-OFF-01 | Semua pengguna login dapat melihat office aktif. | M | `app/Http/Controllers/Api/OfficeController.php:41-45` |
+| FR-OFF-02 | HR dapat menambah office; `name` wajib, koordinat valid, radius 10–5000 m. | M | `app/Http/Controllers/Api/OfficeController.php:14-52` |
+| FR-OFF-03 | HR dapat mengubah office, termasuk `is_active`. | M | `app/Http/Controllers/Api/OfficeController.php:54-66` |
+| FR-OFF-04 | Seed awal menyediakan satu office aktif. | M | `database/seeders/OfficeSeeder.php:17-31` |
 
 ### 3.5 Modul ATT
 
 | ID | Kebutuhan | Prioritas | Rujukan |
 |---|---|---|---|
-| FR-ATT-01 | `GET /api/attendance/today` → `state` (`BELUM_IN`/`SUDAH_IN`/`SUDAH_OUT`), `can_check_in`, `can_check_out`, aturan jam, daftar office. | M | `attendance.js:61-72` |
-| FR-ATT-02 | IN pertama tersimpan (`check_in_at`, status, office, koordinat, jarak, foto). | M | `attendance.js:75-90` |
-| FR-ATT-03 | IN kedua → `409 ALREADY_CHECKED_IN` tanpa duplikasi. | M | `attendance.js:78-79,87` |
-| FR-ATT-04 | OUT tanpa IN → `409 NOT_CHECKED_IN`. | M | `attendance.js:95-96` |
-| FR-ATT-05 | OUT setelah IN dan belum OUT berhasil. | M | `attendance.js:98-103` |
-| FR-ATT-06 | OUT kedua → `409 ALREADY_CHECKED_OUT`. | M | `attendance.js:97,101` |
-| FR-ATT-07 | Status `TEPAT_WAKTU` bila ≤ 08:15, `TERLAMBAT` bila > 08:15, dari jam server. | M | `utils/time.js:15-20` |
-| FR-ATT-08 | Foto wajib → `400 PHOTO_REQUIRED` bila tidak ada. | M | `attendance.js:33` |
-| FR-ATT-09 | Koordinat wajib & valid → `400 GPS_REQUIRED`. | M | `attendance.js:34-35` |
-| FR-ATT-10 | Di luar radius → `403 OUTSIDE_RADIUS` + `{office, distance_m, radius_m}`. | M | `attendance.js:36-42` |
-| FR-ATT-11 | Tidak ada office aktif → `409 NO_OFFICE`. | M | `attendance.js:36-37` |
-| FR-ATT-12 | Karyawan `INACTIVE` ditolak → `403 ACCOUNT_INACTIVE`. | M | `attendance.js:54-58` |
-| FR-ATT-13 | Keunikan `(employee_id, work_date)` di level database. | M | `db.js:47` |
-| FR-ATT-14 | Foto yang sudah terunggah dihapus bila request ditolak. | S | `attendance.js:16,46-52` |
-| FR-ATT-15 | Foto > 5 MB atau tipe tidak didukung → `400 INVALID_PHOTO`. | S | `middleware/upload.js:18-19`, `app.js:24` |
+| FR-ATT-01 | `GET /api/attendance/today` → `state` (`BELUM_IN`/`SUDAH_IN`/`SUDAH_OUT`), `can_check_in`, `can_check_out`, aturan jam, daftar office. | M | `app/Http/Controllers/Api/AttendanceController.php:122-148` |
+| FR-ATT-02 | IN pertama tersimpan (`check_in_at`, status, office, koordinat, jarak, foto). | M | `app/Http/Controllers/Api/AttendanceController.php:150-187` |
+| FR-ATT-03 | IN kedua → `409 ALREADY_CHECKED_IN` tanpa duplikasi. | M | `app/Http/Controllers/Api/AttendanceController.php:155-157`, `app/Http/Controllers/Api/AttendanceController.php:179-181` |
+| FR-ATT-04 | OUT tanpa IN → `409 NOT_CHECKED_IN`. | M | `app/Http/Controllers/Api/AttendanceController.php:194-197` |
+| FR-ATT-05 | OUT setelah IN dan belum OUT berhasil. | M | `app/Http/Controllers/Api/AttendanceController.php:202-210` |
+| FR-ATT-06 | OUT kedua → `409 ALREADY_CHECKED_OUT`. | M | `app/Http/Controllers/Api/AttendanceController.php:198-200` |
+| FR-ATT-07 | Status `TEPAT_WAKTU` bila ≤ 08:15, `TERLAMBAT` bila > 08:15, dari jam server. | M | `app/Services/TimeService.php:38-47` |
+| FR-ATT-08 | Foto wajib → `400 PHOTO_REQUIRED` bila tidak ada. | M | `app/Http/Controllers/Api/AttendanceController.php:40-42` |
+| FR-ATT-09 | Koordinat wajib & valid → `400 GPS_REQUIRED`. | M | `app/Http/Controllers/Api/AttendanceController.php:60-65` |
+| FR-ATT-10 | Di luar radius → `403 OUTSIDE_RADIUS` + `{office, distance_m, radius_m}`. | M | `app/Http/Controllers/Api/AttendanceController.php:70-98` |
+| FR-ATT-11 | Tidak ada office aktif → `409 NO_OFFICE`. | M | `app/Http/Controllers/Api/AttendanceController.php:70-73` |
+| FR-ATT-12 | Karyawan `INACTIVE` ditolak → `403 ACCOUNT_INACTIVE`. | M | `app/Http/Controllers/Api/AttendanceController.php:23-36` |
+| FR-ATT-13 | Keunikan `(employee_id, work_date)` di level database. | M | `database/migrations/2014_10_12_000003_create_attendances_table.php:29` |
+| FR-ATT-14 | Foto yang sudah terunggah dihapus bila request ditolak. | S | `app/Http/Controllers/Api/AttendanceController.php:159`, `app/Http/Controllers/Api/AttendanceController.php:173-183` |
+| FR-ATT-15 | Foto > 5 MB atau tipe tidak didukung → `400 INVALID_PHOTO`. | S | `app/Http/Controllers/Api/AttendanceController.php:49-58`, `app/Exceptions/Handler.php:52-64` |
 
 ### 3.6 Modul HIS
 
 | ID | Kebutuhan | Prioritas | Rujukan |
 |---|---|---|---|
-| FR-HIS-01 | Employee melihat riwayat sendiri; default `this_month`. | M | `attendance.js:142-149` |
-| FR-HIS-02 | Employee meminta data karyawan lain → `403 FORBIDDEN`. | M | `attendance.js:144-145` |
-| FR-HIS-03 | HR melihat semua absensi; default `today`. | M | `attendance.js:152` |
-| FR-HIS-04 | Prioritas filter `date` > `from`+`to` > `preset` > default. | M | `utils/filters.js:10-23` |
-| FR-HIS-05 | Validasi tanggal: format, `from ≤ to`, maks 366 hari. | M | `utils/filters.js:19-21` |
-| FR-HIS-06 | Filter status `TEPAT_WAKTU`, `TERLAMBAT`, `BELUM_OUT`, `SUDAH_OUT`, `BELUM_IN`. | M | `attendance.js:15,112-134` |
-| FR-HIS-07 | Filter `employee_id`, `search`, `sort`, paginasi. | S | `attendance.js:114-138` |
-| FR-HIS-08 | Foto IN/OUT via endpoint terproteksi; Employee hanya foto sendiri. | S | `attendance.js:155-162` |
+| FR-HIS-01 | Employee melihat riwayat sendiri; default `this_month`. | M | `app/Http/Controllers/Api/AttendanceController.php:366-377` |
+| FR-HIS-02 | Employee meminta data karyawan lain → `403 FORBIDDEN`. | M | `app/Http/Controllers/Api/AttendanceController.php:369-372` |
+| FR-HIS-03 | HR melihat semua absensi; default `today`. | M | `routes/api.php:60` |
+| FR-HIS-04 | Prioritas filter `date` > `from`+`to` > `preset` > default. | M | `app/Http/Controllers/Api/AttendanceController.php:216-249` |
+| FR-HIS-05 | Validasi tanggal: format, `from ≤ to`, maks 366 hari. | M | `app/Http/Controllers/Api/AttendanceController.php:233-246` |
+| FR-HIS-06 | Filter status `TEPAT_WAKTU`, `TERLAMBAT`, `BELUM_OUT`, `SUDAH_OUT`, `BELUM_IN`. | M | `app/Http/Controllers/Api/AttendanceController.php:20`, `app/Http/Controllers/Api/AttendanceController.php:251-364` |
+| FR-HIS-07 | Filter `employee_id`, `search`, `sort`, paginasi. | S | `app/Http/Controllers/Api/AttendanceController.php:251-364` |
+| FR-HIS-08 | Foto IN/OUT via endpoint terproteksi; Employee hanya foto sendiri. | S | `app/Http/Controllers/Api/AttendanceController.php:384-407` |
 | FR-HIS-09 | Ekspor CSV sesuai filter aktif (maks 25 halaman × 200 baris). | C | `public/app.js:287-300` |
 
 ### 3.7 Modul DSH
 
 | ID | Kebutuhan | Prioritas | Rujukan |
 |---|---|---|---|
-| FR-DSH-01 | Ringkasan harian: total aktif, sudah IN, tepat waktu, terlambat, belum OUT, sudah OUT, belum IN. | M | `dashboard.js:16-31` |
-| FR-DSH-02 | Daftar terlambat, belum OUT, belum IN. | M | `dashboard.js:32-35` |
-| FR-DSH-03 | Tren 7 hari (sudah IN & terlambat). | S | `dashboard.js:23-28` |
-| FR-DSH-04 | `date` wajib `YYYY-MM-DD`, selain itu `400 VALIDATION`. | M | `dashboard.js:15` |
-| FR-DSH-05 | Angka dashboard konsisten dengan daftar absensi tanggal yang sama. | M | `dashboard.js:16-20` vs `attendance.js:129-138` |
+| FR-DSH-01 | Ringkasan harian: total aktif, sudah IN, tepat waktu, terlambat, belum OUT, sudah OUT, belum IN. | M | `app/Http/Controllers/Api/DashboardController.php:23-48` |
+| FR-DSH-02 | Daftar terlambat, belum OUT, belum IN. | M | `app/Http/Controllers/Api/DashboardController.php:50-83` |
+| FR-DSH-03 | Tren 7 hari (sudah IN & terlambat). | S | `app/Http/Controllers/Api/DashboardController.php:85-100` |
+| FR-DSH-04 | `date` wajib `YYYY-MM-DD`, selain itu `400 VALIDATION`. | M | `app/Http/Controllers/Api/DashboardController.php:18-21` |
+| FR-DSH-05 | Angka dashboard konsisten dengan daftar absensi tanggal yang sama. | M | `app/Http/Controllers/Api/DashboardController.php:25-33` vs `app/Http/Controllers/Api/AttendanceController.php:323-351` |
 
 ### 3.8 Modul WEB
 
 | ID | Kebutuhan | Prioritas | Rujukan |
 |---|---|---|---|
-| FR-WEB-01 | Web HR disajikan tanpa build dari `public/`. | M | `app.js:11`, `public/index.html` |
+| FR-WEB-01 | Web HR disajikan tanpa build dari `public/`. | M | `routes/web.php:13-19`, `public/index.html` |
 | FR-WEB-02 | Navigasi hash: `#/dashboard`, `#/absensi`, `#/karyawan`, `#/office`. | M | `public/app.js:107,144-151` |
 | FR-WEB-03 | Dialog kredensial (kode, email, password) + tombol salin. | S | `public/app.js:445-453` |
 | FR-WEB-04 | Toast sukses/error untuk setiap aksi. | C | `public/app.js:33-36` |
@@ -370,11 +373,11 @@ Scenario: Web HR tidak menampilkan data sebelum login
 | NFR-10 | Usability | Loading, error, empty state di setiap layar data | Ketiganya ada |
 | NFR-11 | Usability | Alur inti ≤ 3 klik dari menu | Diverifikasi manual |
 | NFR-12 | Maintainability | Pemisahan route/middleware/util | Struktur konsisten |
-| NFR-13 | Portability | Node.js 22.13+ tanpa native build | `npm install && npm start` sukses |
-| NFR-14 | Observability | Error 5xx tercatat di log | `app.js:27` |
-| NFR-15 | Testability | ATT-01..07 tercakup tes otomatis | `npm test` lulus |
+| NFR-13 | Portability | PHP 8.1+ tanpa native build | `composer install` lalu `php artisan serve` sukses |
+| NFR-14 | Observability | Error 5xx tercatat di log | `app/Exceptions/Handler.php:23-66` |
+| NFR-15 | Testability | ATT-01..07 tercakup tes otomatis | `php artisan test` lulus |
 | NFR-16 | Localization | Bahasa antarmuka & pesan error | Bahasa Indonesia |
-| NFR-17 | Time Integrity | Zona `Asia/Jakarta` terpusat | `config.js:20`, `utils/time.js` |
+| NFR-17 | Time Integrity | Zona `Asia/Jakarta` terpusat | `app/Services/TimeService.php:10-12` |
 
 ---
 
@@ -409,7 +412,7 @@ Scenario: Web HR tidak menampilkan data sebelum login
 | `attendances` | Transaksi absensi harian | `(employee_id, work_date)` |
 | `hr_code_sequence` | Counter nomor akun HR | `id = 1` |
 
-Integritas: `attendances.employee_id` dan `users.employee_id` → `employees.id` `ON DELETE CASCADE`; `attendances.office_id` → `offices.id`; `PRAGMA foreign_keys = ON`; `journal_mode = WAL` (`src/db.js:9`). Detail pada `04-ERD.md`.
+Integritas: `attendances.employee_id` → `employees.id` `ON DELETE CASCADE`; `users.employee_id` → `employees.id` `ON DELETE SET NULL`; `attendances.office_id` → `offices.id` `ON DELETE SET NULL` (`database/migrations/2014_10_12_000001_create_users_table.php:16`, `..._000003_create_attendances_table.php:15,20`). Foreign key SQLite diaktifkan lewat `foreign_key_constraints` (`config/database.php:43`, default `true`); mode jurnal memakai bawaan SQLite (`delete`), bukan WAL. Detail pada `04-ERD.md`.
 
 ---
 
@@ -457,7 +460,7 @@ Sukses (daftar):
 { "data": [], "meta": { "page": 1, "limit": 20, "total": 0, "total_pages": 0, "from": "2026-11-18", "to": "2026-11-18" } }
 ```
 
-Gagal (`src/app.js:28`):
+Gagal (`app/Exceptions/Handler.php:23-66`):
 ```json
 { "error": { "code": "ALREADY_CHECKED_IN", "message": "Anda sudah IN hari ini" } }
 ```
@@ -529,18 +532,18 @@ Gagal (`src/app.js:28`):
 
 | No | Dokumen Awal | Implementasi | Status |
 |---|---|---|---|
-| D-01 | MySQL + migrations + seeder framework | SQLite `node:sqlite`, migrasi `PRAGMA user_version` (`db.js:52-96`) | Perbedaan teknis; constraint setara |
+| D-01 | MySQL + migrations + seeder framework | SQLite + migrasi Laravel (`database/migrations/`) dan seeder (`database/seeders/`) | Perbedaan teknis; constraint setara |
 | D-02 | GPS, kamera, geofencing di *scope tidak wajib* | Diimplementasikan (foto + radius) | Fitur tambahan |
 | D-03 | Endpoint `GET/POST/PUT /api/employees` | Ditambah `DELETE`, `reset-password`, `/api/admins` | Perlu pembaruan API contract |
 | D-04 | Format respons `{success, message, data, error}` | `{data, meta}` / `{error:{code,message}}` | Perbedaan kontrak |
-| D-05 | Struktur `backend/`, `mobile/`, `docs/` | Backend di `src/`, Web di `public/`, **mobile belum ada** | Gap struktur |
+| D-05 | Struktur `backend/`, `mobile/`, `docs/` | Backend di `app/` + `routes/api.php`, Web di `public/`, **mobile belum ada** | Gap struktur |
 | D-06 | Export di luar scope | Tersedia CSV (`public/app.js:287-300`) | Fitur tambahan |
 | D-07 | Login disebut sebagai "login demo" | Login penuh dengan JWT + role guard, dan menjadi gerbang semua fitur | Lebih ketat dari dokumen |
-| D-08 | `README.md:25` menyebut kode karyawan `EMP001` | Implementasi memakai `kyNN` (`employees.js:28`) | Perbaiki README saat ada kesempatan |
-| D-09 | `README.md` menyebut "9 tes" | `test/attendance.test.js` berisi **10** kasus `test(...)` | Acuan jumlah tes = kode, bukan README |
-| D-10 | Docx hanya menyebut satu tumpukan teknologi | Root repo berisi **dua implementasi**: Node/Express di `src/` (dipakai dan diuji) dan **Laravel 10** di `app/` + `routes/api.php` (ditambahkan commit `3ee2b7a` "migrasi ke laravel"; `vendor/` tidak tersedia) | Dua titik masuk; dokumen dan pengujian 18 Nov 2026 mengacu implementasi Node yang berkasnya tidak berubah |
-| D-11 | Docx menetapkan `422` untuk input tidak valid dan `409` untuk konflik | Implementasi memakai `400 VALIDATION` untuk input tidak valid (`employees.js:56-60`, `offices.js:22-23`, `auth.js:12`) dan `409` untuk konflik (`attendance.js:79,96-97`, `employees.js:63-64`) | Perbedaan kode status |
-| D-12 | Fakta repo (bukan deviasi docx) | Implementasi Laravel paralel menyediakan 20 endpoint API yang sama + `/health` (`routes/api.php`), gerbang `jwt.auth` (`app/Http/Middleware/JwtAuth.php`, `routes/api.php:18`) dan peran `role:HR`/`role:EMPLOYEE` (`RequireRole.php`), serta 5 tes fitur (`tests/Feature/WorkforceAttendanceTest.php`) | Kontrak API §7.1 berlaku untuk kedua implementasi; angka eksekusi QA hanya untuk Node |
+| D-08 | `README.md:25` menyebut kode karyawan `EMP001` | Implementasi memakai `kyNN` (`app/Http/Controllers/Api/EmployeeController.php:44-50`) | Perbaiki README saat ada kesempatan |
+| D-09 | `README.md` menyebut "9 tes" | `tests/Feature/WorkforceAttendanceTest.php` berisi **5** metode `test_*` | Acuan jumlah tes = kode, bukan README |
+| D-10 | Docx hanya menyebut satu tumpukan teknologi | Implementasi tunggal **Laravel 10** (`app/` + `routes/api.php`). Node/Express yang menjadi baseline uji 18 Nov 2026 sudah dihapus pada cleanup 19 Nov 2026 | Repo kini satu tumpukan; angka QA tetap tercatat sebagai hasil siklus Node |
+| D-11 | Docx menetapkan `422` untuk input tidak valid dan `409` untuk konflik | Implementasi memakai `400 VALIDATION` untuk input tidak valid (`EmployeeController.php:134-150,201-216`, `OfficeController.php:54-66`, `AuthController.php:28`) dan `409` untuk konflik (`AttendanceController.php:139-177`) | Perbedaan kode status |
+| D-12 | Fakta repo (bukan deviasi docx) | Riwayat: implementasi Laravel (commit `3ee2b7a`) pernah berdampingan dengan Node. **Sudah disatukan**; Laravel menyediakan 20 endpoint API + `/health` (`routes/api.php`), gerbang `jwt.auth` (`routes/api.php:18`) dan peran `role:HR`/`role:EMPLOYEE` (`app/Http/Middleware/RequireRole.php`), 5 tes fitur, serta seeder akun HR (`database/seeders/HrSeeder.php`) | Kontrak API §7.1 berlaku; angka eksekusi QA tetap milik siklus Node |
 
 ---
 
@@ -549,19 +552,19 @@ Gagal (`src/app.js:28`):
 | Code | HTTP | Arti | Sumber |
 |---|---|---|---|
 | `VALIDATION` | 400 | Input tidak valid | berbagai route |
-| `INVALID_PHOTO` | 400 | Tipe berkas tidak didukung / > 5 MB | `upload.js`, `app.js:24` |
-| `PHOTO_REQUIRED` | 400 | Foto kamera tidak dilampirkan | `attendance.js:33` |
-| `GPS_REQUIRED` | 400 | Koordinat tidak ada/tidak valid | `attendance.js:35` |
-| `INVALID_CREDENTIALS` | 401 | Email/password salah | `auth.js:16` |
-| `UNAUTHORIZED` | 401 | Token tidak ada/tidak valid/kedaluwarsa | `middleware/auth.js` |
-| `FORBIDDEN` | 403 | Peran tidak berhak / data orang lain | `requireRole`, `attendance.js:145,158` |
-| `ACCOUNT_INACTIVE` | 403 | Karyawan nonaktif | `auth.js:18`, `attendance.js:56` |
-| `OUTSIDE_RADIUS` | 403 | Di luar radius office | `attendance.js:40` |
-| `NOT_FOUND` | 404 | Resource tidak ditemukan | route terkait, `app.js:20` |
-| `DUPLICATE_CODE` | 409 | Kode karyawan dipakai | `employees.js:63,90` |
-| `DUPLICATE_EMAIL` | 409 | Email dipakai | `employees.js:64,91`, `admins.js:44` |
-| `ALREADY_CHECKED_IN` | 409 | Sudah IN hari ini | `attendance.js:79,87` |
-| `NOT_CHECKED_IN` | 409 | Belum IN | `attendance.js:96` |
-| `ALREADY_CHECKED_OUT` | 409 | Sudah OUT | `attendance.js:97,101` |
-| `NO_OFFICE` | 409 | Tidak ada office aktif | `attendance.js:37` |
-| `INTERNAL` | 500 | Kesalahan server | `app.js:28` |
+| `INVALID_PHOTO` | 400 | Tipe berkas tidak didukung / > 5 MB | `app/Http/Controllers/Api/AttendanceController.php:38-121`, `app/Exceptions/Handler.php:52-64` |
+| `PHOTO_REQUIRED` | 400 | Foto kamera tidak dilampirkan | `app/Http/Controllers/Api/AttendanceController.php:40-42` |
+| `GPS_REQUIRED` | 400 | Koordinat tidak ada/tidak valid | `app/Http/Controllers/Api/AttendanceController.php:63-65` |
+| `INVALID_CREDENTIALS` | 401 | Email/password salah | `app/Http/Controllers/Api/AuthController.php:35-37` |
+| `UNAUTHORIZED` | 401 | Token tidak ada/tidak valid/kedaluwarsa | `app/Http/Middleware/JwtAuth.php` |
+| `FORBIDDEN` | 403 | Peran tidak berhak / data orang lain | `app/Http/Middleware/RequireRole.php:11-19`, `app/Http/Controllers/Api/AttendanceController.php:370-372`, `app/Http/Controllers/Api/AttendanceController.php:391-394` |
+| `ACCOUNT_INACTIVE` | 403 | Karyawan nonaktif | `app/Http/Controllers/Api/AuthController.php:39-41`, `app/Http/Controllers/Api/AttendanceController.php:31-33` |
+| `OUTSIDE_RADIUS` | 403 | Di luar radius office | `app/Http/Controllers/Api/AttendanceController.php:86-98` |
+| `NOT_FOUND` | 404 | Resource tidak ditemukan | route terkait, `app/Exceptions/Handler.php:29-38` |
+| `DUPLICATE_CODE` | 409 | Kode karyawan dipakai | `app/Http/Controllers/Api/EmployeeController.php:150-152`, `app/Http/Controllers/Api/EmployeeController.php:216-218` |
+| `DUPLICATE_EMAIL` | 409 | Email dipakai | `app/Http/Controllers/Api/EmployeeController.php:154-156`, `app/Http/Controllers/Api/EmployeeController.php:220-222`, `app/Http/Controllers/Api/AdminController.php:102-105` |
+| `ALREADY_CHECKED_IN` | 409 | Sudah IN hari ini | `app/Http/Controllers/Api/AttendanceController.php:155-157`, `app/Http/Controllers/Api/AttendanceController.php:179-181` |
+| `NOT_CHECKED_IN` | 409 | Belum IN | `app/Http/Controllers/Api/AttendanceController.php:195-197` |
+| `ALREADY_CHECKED_OUT` | 409 | Sudah OUT | `app/Http/Controllers/Api/AttendanceController.php:198-200` |
+| `NO_OFFICE` | 409 | Tidak ada office aktif | `app/Http/Controllers/Api/AttendanceController.php:71-73` |
+| `INTERNAL` | 500 | Kesalahan server | `app/Exceptions/Handler.php:52-64` |

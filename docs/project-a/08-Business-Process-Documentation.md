@@ -8,7 +8,7 @@
 | Proses | 7 (BP-01 … BP-07) |
 | Aktor | HR Admin, Employee, Sistem |
 | Invarian | **Login adalah langkah pertama setiap proses**; `401` mengembalikan pengguna ke Login |
-| Sumber | `src/`, `public/`, `docs/ETHES_TECH Project.docx` (Bab 1) |
+| Sumber | `app/`, `routes/`, `database/`, `public/`, `docs/ETHES_TECH Project.docx` (Bab 1) |
 | Status angka SLA | **Usulan**, bukan komitmen bisnis yang sudah disepakati |
 
 ---
@@ -44,10 +44,10 @@
 
 | Aspek | Kondisi target | Diwujudkan oleh |
 |---|---|---|
-| Gerbang akses | Semua fitur di balik login; data hanya untuk peran yang berhak | `auth` + `requireRole` |
+| Gerbang akses | Semua fitur di balik login; data hanya untuk peran yang berhak | `jwt.auth` + `role` |
 | Pencatatan | Satu pasang IN/OUT per hari, tidak dapat digandakan | `UNIQUE (employee_id, work_date)` |
 | Verifikasi | Foto kamera + koordinat GPS + radius office | `verifyGpsAndPhoto` |
-| Ketepatan waktu | Dihitung dari jam server zona `Asia/Jakarta` | `utils/time.js` |
+| Ketepatan waktu | Dihitung dari jam server zona `Asia/Jakarta` | `app/Services/TimeService.php` |
 | Rekap | Otomatis, dapat difilter, dapat diekspor | `listQuery`, dashboard, CSV |
 | Jejak bukti | Foto tersimpan dan hanya dapat diakses pemilik/HR | endpoint foto terproteksi |
 | Audit | Riwayat tidak berubah setelah OUT | status dibekukan saat IN |
@@ -85,10 +85,10 @@ flowchart TD
 
 | Langkah | Aktor | Sistem | Bukti |
 |---|---|---|---|
-| 1 | HR login | Terbitkan JWT | `auth.js:10-21` |
-| 2 | HR isi nama | Buat kode/email/password | `employees.js:17-29,54-75` |
-| 3 | HR salin kredensial | Tampilkan `initial_password` sekali | `employees.js:73` |
-| 4 | Karyawan login | Verifikasi status ACTIVE | `auth.js:17-18` |
+| 1 | HR login | Terbitkan JWT | `app/Http/Controllers/Api/AuthController.php:22-58` |
+| 2 | HR isi nama | Buat kode/email/password | `app/Http/Controllers/Api/EmployeeController.php:18-51`, `app/Http/Controllers/Api/EmployeeController.php:130-186` |
+| 3 | HR salin kredensial | Tampilkan `initial_password` sekali | `app/Http/Controllers/Api/EmployeeController.php:182-185` |
+| 4 | Karyawan login | Verifikasi status ACTIVE | `app/Http/Controllers/Api/AuthController.php:39-41` |
 
 **Aturan:** password awal hanya muncul pada respons pembuatan; bila hilang, HR melakukan reset (BP-06).
 **Risiko:** kredensial dikirim lewat kanal tidak aman → sampaikan langsung atau lewat kanal terenkripsi.
@@ -105,7 +105,7 @@ sequenceDiagram
     autonumber
     actor E as Employee
     participant M as Klien mobile
-    participant A as API Express
+    participant A as API Laravel
     participant DB as SQLite
 
     E->>M: Buka aplikasi
@@ -114,14 +114,14 @@ sequenceDiagram
     E->>M: Tekan IN
     M->>M: Ambil foto + GPS
     M->>A: POST /api/attendance/check-in (multipart)
-    A->>A: auth + requireRole EMPLOYEE
+    A->>A: jwt.auth + role EMPLOYEE
     alt token / role gagal
         A-->>M: 401 / 403
         M-->>E: Kembali ke Login
     else lolos
         A->>DB: Cek absensi hari ini
         alt sudah ada
-            A-->>M: 409 ALREADY_CHECKED_IN (foto dihapus)
+            A-->>M: 409 ALREADY_CHECKED_IN
         else belum ada
             A->>A: Validasi foto, GPS, office, radius
             alt validasi gagal
@@ -407,20 +407,20 @@ kelengkapan OUT    = 16 / 18 × 100% = 88,9%
 
 | # | Kejadian | Terdeteksi di | Perilaku sistem | Tindakan pengguna | Data |
 |---|---|---|---|---|---|
-| EX-01 | Token tidak ada | `auth` | 401 `UNAUTHORIZED` | Login | Tidak berubah |
-| EX-02 | Token kedaluwarsa | `auth` | 401, klien logout | Login ulang | Tidak berubah |
-| EX-03 | Role tidak sesuai | `requireRole` | 403 `FORBIDDEN` | Pakai akun yang benar | Tidak berubah |
-| EX-04 | Foto tidak dilampirkan | `verifyGpsAndPhoto` | 400 `PHOTO_REQUIRED` | Ulangi dengan foto | Foto lama dihapus |
-| EX-05 | Foto > 5 MB / tipe salah | multer | 400 `INVALID_PHOTO` | Kompres / ganti format | Tidak ada |
+| EX-01 | Token tidak ada | `jwt.auth` | 401 `UNAUTHORIZED` | Login | Tidak berubah |
+| EX-02 | Token kedaluwarsa | `jwt.auth` | 401, klien logout | Login ulang | Tidak berubah |
+| EX-03 | Role tidak sesuai | `role` | 403 `FORBIDDEN` | Pakai akun yang benar | Tidak berubah |
+| EX-04 | Foto tidak dilampirkan | `verifyGpsAndPhoto` | 400 `PHOTO_REQUIRED` | Ulangi dengan foto | Tidak ada berkas ditulis |
+| EX-05 | Foto > 5 MB / tipe salah | `verifyGpsAndPhoto` | 400 `INVALID_PHOTO` | Kompres / ganti format | Tidak ada berkas ditulis |
 | EX-06 | GPS tidak valid | `validCoord` | 400 `GPS_REQUIRED` | Aktifkan lokasi | Tidak ada |
 | EX-07 | Di luar radius | `verifyGpsAndPhoto` | 403 `OUTSIDE_RADIUS` + jarak | Mendekat ke office | Tidak ada |
 | EX-08 | Tidak ada office aktif | `verifyGpsAndPhoto` | 409 `NO_OFFICE` | Hubungi HR | Tidak ada |
 | EX-09 | Sudah IN | handler IN | 409 `ALREADY_CHECKED_IN` | Lanjut bekerja | Tidak ada duplikasi |
 | EX-10 | OUT tanpa IN | handler OUT | 409 `NOT_CHECKED_IN` | Lakukan IN (bila memungkinkan) | Tidak ada |
 | EX-11 | Sudah OUT | handler OUT | 409 `ALREADY_CHECKED_OUT` | Tidak perlu tindakan | Tidak berubah |
-| EX-12 | Karyawan nonaktif | `activeEmployeeId` | 403 `ACCOUNT_INACTIVE` | Hubungi HR | Tidak ada |
+| EX-12 | Karyawan nonaktif | `getActiveEmployee` | 403 `ACCOUNT_INACTIVE` | Hubungi HR | Tidak ada |
 | EX-13 | Koneksi putus / timeout | klien | Pesan error, status lokal tetap | Coba lagi | Tidak ada |
-| EX-14 | Kalkulasi batas waktu berbeda | `utils/time.js` | Memakai jam server, bukan perangkat | — | Konsisten |
+| EX-14 | Kalkulasi batas waktu berbeda | `app/Services/TimeService.php` | Memakai jam server, bukan perangkat | — | Konsisten |
 
 ---
 
@@ -428,9 +428,9 @@ kelengkapan OUT    = 16 / 18 × 100% = 88,9%
 
 | Aspek | Kebijakan saat ini | Catatan |
 |---|---|---|
-| Penyimpanan | SQLite lokal (`data/attendance.db`) | Backup manual |
+| Penyimpanan | SQLite lokal (`database/database.sqlite`) | Backup manual |
 | Foto | Disk lokal `uploads/attendance/` | Nama berkas acak, bukan nama karyawan |
-| Akses foto | Wajib token; Employee hanya miliknya | `attendance.js:155-162` |
+| Akses foto | Wajib token; Employee hanya miliknya | `app/Http/Controllers/Api/AttendanceController.php:384-407` |
 | Retensi absensi | Sampai karyawan dihapus | Tidak ada arsip otomatis |
 | Retensi akun | Sampai dihapus | Nonaktif tetap menyimpan data |
 | Penghapusan | Cascade ke `users`, `attendances`, berkas foto | Tidak dapat dibatalkan |

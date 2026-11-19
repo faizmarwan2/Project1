@@ -9,7 +9,7 @@
 | Proyek | Project A — Workforce Attendance System |
 | Root | `C:\Users\rayha\Documents\Data Kerja\Ethes Tech - Maganghub\Project A - [17-19 November 2026]\Project1` |
 | Folder output | `docs/project-a/` |
-| Baseline manifest | `docs/project-a/_sources.json` (75 sumber, 21 output) |
+| Baseline manifest | `docs/project-a/_sources.json` (70 sumber, 21 output) |
 | Git | Proses `build`/`update` hanya menulis berkas — **tidak** menjalankan operasi git; commit/push dilakukan terpisah |
 
 ---
@@ -18,7 +18,7 @@
 
 Menghasilkan ulang / menyempurnakan **8 deliverable analisis** (SRS, Use Case Diagram, Activity Diagram, ERD, Flowchart, Functional Requirement, User Story, Business Process Documentation) yang **sepenuhnya diturunkan dari isi project ini sendiri**:
 
-- kode sumber yang ada (`src/`, `public/`, `test/`),
+- kode sumber yang ada (`app/`, `routes/`, `database/`, `public/`, `tests/`),
 - dokumen yang ada (`docs/ETHES_TECH Project.docx` — Bab Project A, `README.md`),
 - dokumen analisis yang sudah ada (`docs/project-a/*.md`).
 
@@ -32,9 +32,9 @@ Tidak boleh mengambil asumsi, fitur, atau referensi dari luar cakupan tersebut.
 |---|---|
 | **C-01** | **Sumber tunggal** = repo ini + `docs/`. Tidak menambah fitur/modul yang tidak ada di kode maupun di `docs/ETHES_TECH Project.docx`. |
 | **C-02** | **Tanpa git**: tidak `git add`, `commit`, `push`, branch, checkout, stash, reset. Semua perubahan hanya file lokal. |
-| **C-03** | Tidak menyentuh berkas milik user: `.gitignore`, `docs/ETHES_TECH Project.docx`, `opencode.jsonc`, `src/**`, `public/**`, `test/**`. Hanya menulis di `docs/project-a/`. |
+| **C-03** | Tidak menyentuh berkas milik user: `.gitignore`, `docs/ETHES_TECH Project.docx`, `opencode.jsonc`, `app/**`, `routes/**`, `database/**`, `public/**`, `tests/**`. Hanya menulis di `docs/project-a/`. |
 | **C-04** | Bahasa Indonesia. Diagram memakai **Mermaid** (dapat dirender di GitHub/VS Code). |
-| **C-05** | Setiap klaim harus dapat ditelusuri ke file sumber (cantumkan referensi seperti `src/routes/attendance.js`). |
+| **C-05** | Setiap klaim harus dapat ditelusuri ke file sumber (cantumkan referensi seperti `app/Http/Controllers/Api/AttendanceController.php`). |
 | **C-06** | Jika dokumen awal (`docx`) berbeda dengan kode, **catat sebagai deviasi**, jangan diam-diam memilih salah satu. |
 | **C-07** | Jangan mengarang angka/SLA bisnis seolah fakta; tandai sebagai **usulan**. |
 | **C-08** | Tidak mengklaim aplikasi Mobile sudah ada bila di repo tidak ada folder mobile — jelaskan sebagai klien API. |
@@ -53,13 +53,13 @@ Ini invarian utama yang diminta. Pernyataan yang harus muncul konsisten di SRS, 
 
 | Lokasi | Perilaku |
 |---|---|
-| `src/routes/auth.js` | `POST /api/login` publik; `GET /api/me` memakai `auth` |
-| `src/routes/employees.js` | `router.use(auth, requireRole('HR'))` — seluruh route butuh login + role HR |
-| `src/routes/admins.js` | `router.use(auth, requireRole('HR'))` |
-| `src/routes/attendance.js` | `router.use(auth)` + `requireRole('EMPLOYEE')` pada IN/OUT/today, `requireRole('HR')` pada daftar |
-| `src/routes/dashboard.js` | `router.use(auth, requireRole('HR'))` |
-| `src/routes/offices.js` | `router.use(auth)`; POST/PUT + `requireRole('HR')` |
-| `src/middleware/auth.js` | Tanpa token → 401 `UNAUTHORIZED`; token invalid/kedaluwarsa → 401; role salah → 403 `FORBIDDEN` |
+| `app/Http/Controllers/Api/AuthController.php` | `POST /api/login` publik; `GET /api/me` di grup `jwt.auth` (`routes/api.php:15-19`) |
+| `routes/api.php:35-42` | Prefix `employees` + `middleware('role:HR')` — seluruh route butuh login + role HR |
+| `routes/api.php:29-32` | Prefix `admins` + `middleware('role:HR')` |
+| `routes/api.php:45-61` | Grup `attendance`; `role:EMPLOYEE` untuk today/IN/OUT, `role:HR` untuk daftar |
+| `routes/api.php:64-66` | Prefix `dashboard` + `middleware('role:HR')` |
+| `routes/api.php:22-26` | `offices` baca untuk semua yang login; POST/PUT `role:HR` |
+| `app/Http/Middleware/JwtAuth.php` | Tanpa token → 401 `UNAUTHORIZED`; token invalid/kedaluwarsa → 401; peran salah → 403 `FORBIDDEN` (`app/Http/Middleware/RequireRole.php`) |
 | `public/app.js` | Tanpa token tersimpan, aplikasi menampilkan `renderLogin()` (`boot()` → baris 110); API 401 → `logout()` dan kembali ke Login (baris 24); `POST /api/login` dengan role bukan HR ditolak di sisi Web ("Akun ini bukan HR. Karyawan login lewat aplikasi mobile.") |
 
 **Satu-satunya pengecualian publik:**
@@ -83,7 +83,7 @@ Ini invarian utama yang diminta. Pernyataan yang harus muncul konsisten di SRS, 
 `UNIQUE(employee_id, work_date)`; IN kedua `409 ALREADY_CHECKED_IN`; OUT kedua `409 ALREADY_CHECKED_OUT`; OUT tanpa IN `409 NOT_CHECKED_IN`.
 
 ### I-03 — Waktu server & zona tunggal
-Perhitungan memakai jam server zona `Asia/Jakarta` (`src/utils/time.js`), bukan jam perangkat. Jam masuk 08:00, toleransi 15 menit; **> 08:15 = `TERLAMBAT`**, 08:15 tepat = `TEPAT_WAKTU`.
+Perhitungan memakai jam server zona `Asia/Jakarta` (`app/Services/TimeService.php`), bukan jam perangkat. Jam masuk 08:00, toleransi 15 menit; **> 08:15 = `TERLAMBAT`**, 08:15 tepat = `TEPAT_WAKTU`.
 
 ### I-04 — Tidak boleh sukses palsu (ATT-08)
 Status lokal hanya berubah setelah respons 2xx terverifikasi; jaringan gagal/timeout → tampilkan error.
@@ -95,7 +95,7 @@ Employee hanya boleh membaca data & foto miliknya (`403 FORBIDDEN` untuk data or
 Foto kamera wajib (`400 PHOTO_REQUIRED`), koordinat GPS wajib (`400 GPS_REQUIRED`), radius office (`403 OUTSIDE_RADIUS`), office aktif wajib ada (`409 NO_OFFICE`).
 
 ### I-07 — Kebenaran kode error
-Gunakan kode dan status HTTP yang benar-benar ada di `src/utils/http.js`, `src/app.js`, dan route terkait (lihat lampiran `_sources.json`). Jangan mengarang kode error.
+Gunakan kode dan status HTTP yang benar-benar ada di `app/Exceptions/ApiException.php`, `app/Http/Kernel.php` + `routes/api.php`, dan route terkait (lihat lampiran `_sources.json`). Jangan mengarang kode error.
 
 ### I-08 — Konsistensi antar dokumen
 Angka FR, ID use case, ID activity, nama tabel, nama kolom, dan kode error harus identik di seluruh 8 dokumen (satu sumber kebenaran: `docs/project-a/TASK.md` ini + kode).
@@ -110,7 +110,7 @@ Angka FR, ID use case, ID activity, nama tabel, nama kolom, dan kode error harus
 | D1 | **SRS** | `01-SRS.md` | Ruang lingkup, aktor, deskripsi umum, FR per modul (AUTH, EMP, ADM, OFF, ATT, HIS, DSH, WEB), NFR, aturan bisnis, kebutuhan data, kontrak API, kriteria UAT, traceability, **§ Auth Gate**, deviasi docx vs kode | Setiap FR punya ID, prioritas, kriteria terukur; tabel API memuat kolom peran |
 | D2 | **Use Case Diagram** | `02-Use-Case-Diagram.md` | Diagram (Mermaid) seluruh use case + diagram per aktor + spesifikasi tiap UC (aktor, prakondisi **sudah login**, alur utama, alternatif, pascakondisi) + matriks aktor | Tidak ada UC tanpa prakondisi login (kecuali UC Login) |
 | D3 | **Activity Diagram** | `03-Activity-Diagram.md` | Diagram aktivitas untuk setiap alur utama: login, cek status, IN, OUT, riwayat, dashboard, CRUD karyawan, office, reset password, admin HR | Setiap diagram punya titik awal & akhir, cabang error, dan cek token bila relevan |
-| D4 | **ERD** | `04-ERD.md` | `erDiagram` + diagram relasi + kamus data + DDL aktual + kardinalitas + integritas + indeks + status turunan | Nama tabel/kolom sama persis dengan `src/db.js` |
+| D4 | **ERD** | `04-ERD.md` | `erDiagram` + diagram relasi + kamus data + DDL aktual + kardinalitas + integritas + indeks + status turunan | Nama tabel/kolom sama persis dengan `database/migrations/` |
 | D5 | **Flowchart** | `05-Flowchart.md` | Alur sistem, state machine absensi, auth/role guard, pipeline request, resolusi filter tanggal, penentuan TERLAMBAT, agregasi dashboard, penanganan error, matriks keputusan | Tidak ada jalur yang menyatakan sukses saat respons bukan 2xx |
 | D6 | **Functional Requirement** | `06-Functional-Requirement.md` | Daftar FR + prioritas + acceptance criteria (Gherkin) + status implementasi + traceability FR→file→test + daftar gap | Jumlah FR per modul konsisten dengan D1 |
 | D7 | **User Story** | `07-User-Story.md` | Persona, epic, user story + Gherkin + story point, DoR/DoD, rencana sprint, matriks story→FR | Setiap story punya minimal 1 skenario Gherkin |
@@ -133,7 +133,7 @@ Angka FR, ID use case, ID activity, nama tabel, nama kolom, dan kode error harus
 ## 5. Rencana Eksekusi saat `build`
 
 1. Baca `_sources.json` → pastikan tidak ada sumber berubah sejak baseline.
-2. Baca ulang sumber kunci: `src/db.js`, `src/app.js`, `src/middleware/auth.js`, `src/routes/*.js`, `src/utils/*.js`, `test/attendance.test.js`, `README.md`, hasil ekstraksi `docs/ETHES_TECH Project.docx`.
+2. Baca ulang sumber kunci: `database/migrations/`, `app/Http/Kernel.php` + `routes/api.php`, `app/Http/Middleware/JwtAuth.php`, `app/Services/*.php`, `tests/Feature/WorkforceAttendanceTest.php`, `README.md`, hasil ekstraksi `docs/ETHES_TECH Project.docx`.
 3. Bangun **matriks kebenaran** internal (tabel, kolom, endpoint, peran, error code, aturan waktu) → dipakai oleh semua deliverable agar konsisten.
 4. Tulis D1 (SRS) lebih dulu karena menjadi acuan ID.
 5. Turunkan D2 → D3 → D5 → D4 (diagram & data), lalu D6 (FR), D7 (User Story), D8 (Business Process).
@@ -153,8 +153,8 @@ Angka FR, ID use case, ID activity, nama tabel, nama kolom, dan kode error harus
 - [ ] Semua user story (kecuali story login) menyebut "saya sudah login" pada Given.
 - [ ] Tabel endpoint menandai peran HR / EMPLOYEE / publik-dengan-keterangan.
 - [ ] Tidak ada endpoint/fitur yang tidak ada di kode.
-- [ ] Nama tabel & kolom = `src/db.js`.
-- [ ] Kode error = `src/**` (bukan karangan).
+- [ ] Nama tabel & kolom = `database/migrations/`.
+- [ ] Kode error = `app/` (bukan karangan).
 - [ ] Jumlah FR di D1 = jumlah FR di D6 = jumlah baris FR di D12.
 - [ ] Nomor UC di D2 = jumlah UC di D1.
 - [ ] Setiap FR di D12 punya minimal satu TC; tidak ada TC yang tidak dirujuk.
@@ -175,7 +175,7 @@ Saat user menulis **"update"**:
 
 | Langkah | Aksi |
 |---|---|
-| U-1 | Rekomputasi hash seluruh sumber (`src/**`, `public/**`, `test/**`, `README.md`, `package.json`, `.env.example`, `docs/ETHES_TECH Project.docx`) lalu bandingkan dengan `_sources.json`. |
+| U-1 | Rekomputasi hash seluruh sumber (`app/**`, `routes/**`, `database/**`, `public/**`, `tests/**`, `README.md`, `composer.json`, `.env.example`, `docs/ETHES_TECH Project.docx`) lalu bandingkan dengan `_sources.json`. |
 | U-2 | Baca **hanya file yang berubah/baru** (hash berbeda atau tidak ada di manifest), bukan seluruh repo — ini yang menghemat waktu. |
 | U-3 | Baca juga file output yang terakhir dimodifikasi bila user mengubahnya manual (bandingkan hash `outputs`). |
 | U-4 | "Ingat kembali" invarian §3 dari file ini (tidak perlu membaca ulang seluruh dokumen). |
@@ -189,22 +189,22 @@ Saat user menulis **"update"**:
 
 | File yang berubah | Deliverable yang wajib diperbarui |
 |---|---|
-| `src/db.js` | D4 (ERD), D1 (kebutuhan data), D5 (status turunan) |
-| `src/app.js` | D1 (routing/endpoint), D5 (error handler), D6 |
-| `src/middleware/auth.js` | D1 §Auth Gate, D2 (UC Login), D5 (guard), D6, D7 |
-| `src/routes/auth.js` | D1, D2 UC-01, D3 AD Login |
-| `src/routes/employees.js` | D1, D2 UC-03..07, D3, D6, D7 |
-| `src/routes/admins.js` | D1, D2 UC-08, D3, D6 |
-| `src/routes/offices.js` | D1, D2 UC-09, D3, D6 |
-| `src/routes/attendance.js` | D1, D2 UC-10..15, D3, D5, D6, D7, D8 |
-| `src/routes/dashboard.js` | D1, D2 UC-17, D3, D5, D6 |
-| `src/utils/time.js` | D1 (aturan waktu), D5 (FC penentuan status), D8 (SLA) |
-| `src/utils/filters.js` | D1 (filter tanggal), D5 (resolusi periode), D6 |
-| `src/utils/geo.js` | D1 (radius), D5, D6 |
+| `database/migrations/` | D4 (ERD), D1 (kebutuhan data), D5 (status turunan) |
+| `app/Http/Kernel.php` + `routes/api.php` | D1 (routing/endpoint), D5 (error handler), D6 |
+| `app/Http/Middleware/JwtAuth.php` | D1 §Auth Gate, D2 (UC Login), D5 (guard), D6, D7 |
+| `app/Http/Controllers/Api/AuthController.php` | D1, D2 UC-01, D3 AD Login |
+| `app/Http/Controllers/Api/EmployeeController.php` | D1, D2 UC-03..07, D3, D6, D7 |
+| `app/Http/Controllers/Api/AdminController.php` | D1, D2 UC-08, D3, D6 |
+| `app/Http/Controllers/Api/OfficeController.php` | D1, D2 UC-09, D3, D6 |
+| `app/Http/Controllers/Api/AttendanceController.php` | D1, D2 UC-10..15, D3, D5, D6, D7, D8 |
+| `app/Http/Controllers/Api/DashboardController.php` | D1, D2 UC-17, D3, D5, D6 |
+| `app/Services/TimeService.php` | D1 (aturan waktu), D5 (FC penentuan status), D8 (SLA) |
+| `app/Http/Controllers/Api/AttendanceController.php:205-238` | D1 (filter tanggal), D5 (resolusi periode), D6 |
+| `app/Services/GeoService.php` | D1 (radius), D5, D6 |
 | `public/app.js` | D1 (antarmuka), D3, D6 (modul WEB), D7 |
-| `test/attendance.test.js` | D6 (traceability), D1 (kriteria UAT) |
+| `tests/Feature/WorkforceAttendanceTest.php` | D6 (traceability), D1 (kriteria UAT) |
 | `docs/ETHES_TECH Project.docx` | D1 (deviasi), D8 (proses bisnis), D7 (prioritas) |
-| `README.md` / `package.json` | D1 (stack & cara jalan), D0 |
+| `README.md` / `composer.json` | D1 (stack & cara jalan), D0 |
 
 ### 7.2 Protokol `build`
 
@@ -241,16 +241,16 @@ Fakta yang harus ditulis apa adanya (bukan ditambal dengan asumsi):
 | Hal | Fakta di repo |
 |---|---|
 | Aplikasi Mobile | Tidak ada folder/proyek mobile di repo; Mobile diperlakukan sebagai klien API sesuai `README.md` |
-| Struktur folder wajib docx | `backend/`, `mobile/`, `docs/` — kondisi aktual: backend di `src/`, web di `public/`, mobile tidak ada |
-| Database | SQLite (`node:sqlite`), bukan MySQL; migrasi via `PRAGMA user_version` |
+| Struktur folder wajib docx | `backend/`, `mobile/`, `docs/` — kondisi aktual: backend Laravel di `app/`, web di `public/`, mobile tidak ada |
+| Database | SQLite via `pdo_sqlite` (Laravel), bukan MySQL; skema dibentuk migrasi `database/migrations/` dan versi dilacak tabel `migrations` |
 | Format respons | `{ data, meta }` / `{ error: { code, message } }`, bukan `{ success, message, data, error }` |
 | GPS/kamera/geofence | Disebut di luar scope wajib pada docx, tetapi **ada** di implementasi |
 | Export CSV | Disebut di luar scope pada docx, tetapi **ada** di Web HR |
 | UAT evidence | Belum ada berkas bukti UAT di `docs/` |
-| Jumlah tes | `README.md` menulis 9; `test/attendance.test.js` berisi 10 |
-| Implementasi Laravel | Ada di root (`app/`, `routes/api.php`, `public/index.php`) sejak commit `3ee2b7a`; **belum diuji**; titik masuk yang diuji tetap `npm start` (`src/server.js`) |
-| Runtime mesin | Node v20.18.0 saat build; `node:sqlite` gagal; seluruh eksekusi TC tertunda sampai Node ≥ 22.13 |
-| `.env` | Tidak ada di repo; kode memakai nilai cadangan (`config.js:13,19`) — wajib dibuat sebelum demo |
+| Jumlah tes | `README.md` lama menulis 9; `tests/Feature/WorkforceAttendanceTest.php` berisi **5 metode / 27 assertion** (README sudah ditulis ulang 19 Nov 2026) |
+| Implementasi | Hanya Laravel 10 di root (`app/`, `routes/api.php`, `public/index.php`); titik masuk `php artisan serve`. Implementasi Node yang diuji 18 Nov 2026 sudah dihapus (arsip `47adb6b`) |
+| Runtime mesin | PHP 8.5.12 + `pdo_sqlite`; `php artisan test` 5/5 lulus. Node v20.18.0 hanya riwayat siklus lama |
+| `.env` | Tidak ada di repo; kode memakai nilai cadangan (`app/Services/JwtService.php:12`, `database/seeders/HrSeeder.php:24-25`) — wajib dibuat sebelum demo |
 
 ---
 

@@ -3,10 +3,10 @@
 
 | Item | Nilai |
 |---|---|
-| Versi | 2.0 (build) |
-| Tanggal | 18 November 2026 |
-| DBMS | SQLite 3 (`node:sqlite`) |
-| Sumber skema | `src/db.js:11-50`, migrasi `:52-96`, seed `src/seed.js` |
+| Versi | 2.2 (build) |
+| Tanggal | 19 November 2026 |
+| DBMS | SQLite 3 (Laravel `pdo_sqlite`) |
+| Sumber skema | `database/migrations/`, seeder `database/seeders/` |
 | Tabel | 5 (`employees`, `users`, `offices`, `attendances`, `hr_code_sequence`) |
 | Invarian akses | Seluruh data hanya dapat dibaca melalui API yang mensyaratkan login (`TASK.md` I-01) |
 
@@ -72,7 +72,7 @@ erDiagram
     }
 ```
 
-> **Catatan:** `HR_CODE_SEQUENCE` tidak memiliki relasi FK; ia hanya counter untuk membentuk `account_code` `HRNN` secara atomik (`src/utils/hr-code.js`). Karena itu tabel ini berdiri sendiri di diagram.
+> **Catatan:** `HR_CODE_SEQUENCE` tidak memiliki relasi FK; ia hanya counter untuk membentuk `account_code` `HRNN` secara atomik (`app/Services/HrCodeService.php`). Karena itu tabel ini berdiri sendiri di diagram.
 
 ---
 
@@ -105,9 +105,9 @@ flowchart LR
 
 | Aksi | Dampak | Bukti |
 |---|---|---|
-| Hapus karyawan | `users` dan `attendances` ikut terhapus (CASCADE); berkas foto dihapus manual | `src/routes/employees.js:103-122` |
-| Hapus office | **Tidak disediakan endpoint hapus**; hanya `is_active = 0` | `src/routes/offices.js` tidak punya `DELETE` |
-| Nonaktifkan karyawan | Data tetap ada; login & absensi ditolak | `employees.js:78-101`, `auth.js:17`, `attendance.js:54-58` |
+| Hapus karyawan | `users` dan `attendances` ikut terhapus (CASCADE); berkas foto dihapus manual | `app/Http/Controllers/Api/EmployeeController.php:250-290` |
+| Hapus office | **Tidak disediakan endpoint hapus**; hanya `is_active = 0` | `app/Http/Controllers/Api/OfficeController.php` tidak punya `DELETE` |
+| Nonaktifkan karyawan | Data tetap ada; login & absensi ditolak | `app/Http/Controllers/Api/EmployeeController.php:188-248`, `app/Http/Controllers/Api/AuthController.php:39-41`, `app/Http/Controllers/Api/AttendanceController.php:23-36` |
 
 ---
 
@@ -123,7 +123,7 @@ flowchart LR
 | `status` | TEXT | tidak | `ACTIVE` | `CHECK (status IN ('ACTIVE','INACTIVE'))` |
 | `created_at` | TEXT | tidak | `datetime('now')` | Waktu pembuatan (UTC SQLite) |
 
-**Aturan:** kode dibuat `kyNN` dari `max(seq, MAX(kode numerik)) + 1` (`employees.js:25-29`).
+**Aturan:** kode dibuat `kyNN` dari `max(seq, MAX(kode numerik)) + 1` (`app/Http/Controllers/Api/EmployeeController.php:41-51`).
 
 ### 3.2 `users`
 
@@ -137,7 +137,7 @@ flowchart LR
 | `password_hash` | TEXT | tidak | — | bcrypt `hashSync(..., 10)` |
 | `role` | TEXT | tidak | — | `CHECK (role IN ('HR','EMPLOYEE'))` |
 
-**Catatan migrasi:** `account_code` ditambahkan pada `user_version` 2 dan `name` pada `user_version` 3 (`db.js:66-96`); akun HR lama dinomori ulang `HR01..HRNN`.
+**Catatan migrasi:** `account_code` ditambahkan pada `user_version` 2 dan `name` pada `user_version` 3 (`database/migrations/2014_10_12_000001_create_users_table.php:14-18`); akun HR lama dinomori ulang `HR01..HRNN`.
 
 ### 3.3 `offices`
 
@@ -151,7 +151,7 @@ flowchart LR
 | `radius_m` | INTEGER | tidak | 100 | 10 … 5000 meter |
 | `is_active` | INTEGER | tidak | 1 | 1 = aktif, 0 = nonaktif |
 
-**Validasi:** `src/routes/offices.js:22-23`; koordinat memakai `validCoord` (`src/utils/geo.js:8-9`).
+**Validasi:** `app/Http/Controllers/Api/OfficeController.php:54-66`; koordinat memakai `validCoord` (`app/Services/GeoService.php:22-25`).
 
 ### 3.4 `attendances`
 
@@ -171,7 +171,7 @@ flowchart LR
 | `out_distance_m` | REAL | ya | Jarak Haversine OUT |
 | `out_photo` | TEXT | ya | Nama berkas foto OUT |
 
-**Unique:** `UNIQUE (employee_id, work_date)` — penjaga utama ATT-02 dan race condition (`db.js:47`, `attendance.js:86-89`).
+**Unique:** `UNIQUE (employee_id, work_date)` — penjaga utama ATT-02 dan race condition (`database/migrations/2014_10_12_000003_create_attendances_table.php:29`, `app/Http/Controllers/Api/AttendanceController.php:179-181`).
 
 ### 3.5 `hr_code_sequence`
 
@@ -180,7 +180,7 @@ flowchart LR
 | `id` | INTEGER | tidak | PK, `CHECK (id = 1)` |
 | `seq` | INTEGER | tidak | Nomor HR terakhir yang dipakai |
 
-**Mekanisme:** `UPDATE hr_code_sequence SET seq = seq + 1 WHERE id = 1 RETURNING seq` di dalam `BEGIN IMMEDIATE`, lalu dibentuk `HR%02d` (`src/utils/hr-code.js`).
+**Mekanisme:** `UPDATE hr_code_sequence SET seq = seq + 1 WHERE id = 1 RETURNING seq` di dalam `BEGIN IMMEDIATE`, lalu dibentuk `HR%02d` (`app/Services/HrCodeService.php`).
 
 ---
 
@@ -190,12 +190,12 @@ Hanya **dua** nilai status yang benar-benar tersimpan di kolom `attendances.stat
 
 | Status | Sumber | Rumus | Bukti |
 |---|---|---|---|
-| `TEPAT_WAKTU` | Tersimpan | `jam_server <= 08:15` | `utils/time.js:16-20` |
-| `TERLAMBAT` | Tersimpan | `jam_server > 08:15` | `utils/time.js:16-20` |
-| `BELUM_IN` | Turunan | Karyawan `ACTIVE` tanpa baris `attendances` pada tanggal itu | `attendance.js:118-126`, `dashboard.js:34-35` |
-| `BELUM_OUT` | Turunan | `check_out_at IS NULL` | `attendance.js:133` |
-| `SUDAH_OUT` | Turunan | `check_out_at IS NOT NULL` | `attendance.js:134` |
-| `out_state` | Turunan | `SUDAH_OUT` / `BELUM_OUT` per baris | `attendance.js:23` |
+| `TEPAT_WAKTU` | Tersimpan | `jam_server <= 08:15` | `app/Services/TimeService.php:38-47` |
+| `TERLAMBAT` | Tersimpan | `jam_server > 08:15` | `app/Services/TimeService.php:38-47` |
+| `BELUM_IN` | Turunan | Karyawan `ACTIVE` tanpa baris `attendances` pada tanggal itu | `app/Http/Controllers/Api/AttendanceController.php:271-308`, `app/Http/Controllers/Api/DashboardController.php:78-83` |
+| `BELUM_OUT` | Turunan | `check_out_at IS NULL` | `app/Http/Controllers/Api/AttendanceController.php:339-340` |
+| `SUDAH_OUT` | Turunan | `check_out_at IS NOT NULL` | `app/Http/Controllers/Api/AttendanceController.php:341-342` |
+| `out_state` | Turunan | `SUDAH_OUT` / `BELUM_OUT` per baris | `app/Models/Attendance.php:64` |
 
 ```mermaid
 stateDiagram-v2
@@ -217,59 +217,64 @@ stateDiagram-v2
 ## 5. DDL Aktual
 
 ```sql
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
-
-CREATE TABLE employees (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  employee_code TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+-- Hasil nyata `php artisan migrate` (skema dibuat oleh database/migrations/)
+CREATE TABLE "employees" (
+  "id" integer primary key autoincrement not null,
+  "employee_code" varchar not null,
+  "name" varchar not null,
+  "status" varchar not null default 'ACTIVE',
+  "created_at" datetime not null default CURRENT_TIMESTAMP
 );
 
-CREATE TABLE users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,
-  name TEXT,
-  account_code TEXT,
-  email TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('HR','EMPLOYEE'))
+CREATE TABLE "users" (
+  "id" integer primary key autoincrement not null,
+  "employee_id" integer,
+  "name" varchar,
+  "account_code" varchar,
+  "email" varchar not null,
+  "password_hash" varchar not null,
+  "role" varchar not null,
+  foreign key("employee_id") references "employees"("id") on delete set null
 );
 
-CREATE TABLE offices (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  address TEXT,
-  latitude REAL NOT NULL,
-  longitude REAL NOT NULL,
-  radius_m INTEGER NOT NULL DEFAULT 100,
-  is_active INTEGER NOT NULL DEFAULT 1
+CREATE TABLE "offices" (
+  "id" integer primary key autoincrement not null,
+  "name" varchar not null,
+  "address" text,
+  "latitude" float not null,
+  "longitude" float not null,
+  "radius_m" integer not null default '100',
+  "is_active" integer not null default '1'
 );
 
-CREATE TABLE attendances (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
-  work_date TEXT NOT NULL,
-  check_in_at TEXT,
-  check_out_at TEXT,
-  status TEXT NOT NULL CHECK (status IN ('TEPAT_WAKTU','TERLAMBAT')),
-  office_id INTEGER REFERENCES offices(id),
-  in_lat REAL, in_lng REAL, in_distance_m REAL, in_photo TEXT,
-  out_lat REAL, out_lng REAL, out_distance_m REAL, out_photo TEXT,
-  UNIQUE (employee_id, work_date)
+CREATE TABLE "attendances" (
+  "id" integer primary key autoincrement not null,
+  "employee_id" integer not null,
+  "work_date" varchar not null,
+  "check_in_at" varchar,
+  "check_out_at" varchar,
+  "status" varchar not null,
+  "office_id" integer,
+  "in_lat" float, "in_lng" float, "in_distance_m" float, "in_photo" varchar,
+  "out_lat" float, "out_lng" float, "out_distance_m" float, "out_photo" varchar,
+  foreign key("employee_id") references "employees"("id") on delete cascade,
+  foreign key("office_id") references "offices"("id") on delete set null
 );
 
-CREATE INDEX idx_att_date ON attendances(work_date);
-
--- dibuat oleh migrasi user_version 2
-CREATE UNIQUE INDEX idx_users_account_code ON users(account_code);
-CREATE TABLE hr_code_sequence (
-  id INTEGER PRIMARY KEY CHECK (id = 1),
-  seq INTEGER NOT NULL
+CREATE TABLE "hr_code_sequence" (
+  "id" integer primary key autoincrement not null,
+  "seq" integer not null default '0'
 );
+
+-- Indeks dari migrasi
+CREATE UNIQUE INDEX "employees_employee_code_unique" ON "employees"("employee_code");
+CREATE UNIQUE INDEX "users_email_unique" ON "users"("email");
+CREATE UNIQUE INDEX "users_account_code_unique" ON "users"("account_code");
+CREATE UNIQUE INDEX "attendances_employee_id_work_date_unique" ON "attendances"("employee_id","work_date");
+CREATE INDEX "attendances_work_date_index" ON "attendances"("work_date");
 ```
+
+> **Catatan:** tidak ada `CHECK` constraint pada `status`/`role` di Laravel; validasi nilai dilakukan di lapisan aplikasi (`app/Http/Controllers/Api/*.php`). Foreign key SQLite aktif karena `foreign_key_constraints` (`config/database.php:43`); `PRAGMA user_version` tidak dipakai — versi skema dilacak tabel `migrations`.
 
 ---
 
@@ -277,20 +282,20 @@ CREATE TABLE hr_code_sequence (
 
 | Indeks | Kolom | Tujuan |
 |---|---|---|
-| `idx_att_date` | `attendances.work_date` | Filter tanggal & agregasi dashboard |
-| `sqlite_autoindex_attendances_1` | `(employee_id, work_date)` | UNIQUE, sekaligus jalur baca status hari ini |
-| `sqlite_autoindex_users_1` | `users.email` | Login |
-| `idx_users_account_code` | `users.account_code` | Pencarian akun HR |
-| `sqlite_autoindex_employees_1` | `employees.employee_code` | Duplikasi kode |
+| `attendances_work_date_index` | `attendances.work_date` | Filter tanggal & agregasi dashboard |
+| `attendances_employee_id_work_date_unique` | `(employee_id, work_date)` | UNIQUE, sekaligus jalur baca status hari ini |
+| `users_email_unique` | `users.email` | Login |
+| `users_account_code_unique` | `users.account_code` | Pencarian akun HR |
+| `employees_employee_code_unique` | `employees.employee_code` | Duplikasi kode |
 
 Query utama yang dilayani:
 
 | Query | Dipakai oleh | Indeks |
 |---|---|---|
 | `WHERE employee_id = ? AND work_date = ?` | status hari ini, IN, OUT | UNIQUE komposit |
-| `WHERE work_date BETWEEN ? AND ?` | daftar & riwayat | `idx_att_date` |
+| `WHERE work_date BETWEEN ? AND ?` | daftar & riwayat | `attendances_work_date_index` |
 | `JOIN employees` + `LIKE` nama/kode | pencarian | scan terbatas, dataset kecil |
-| `GROUP BY work_date` (tren) | dashboard | `idx_att_date` |
+| `GROUP BY work_date` (tren) | dashboard | `attendances_work_date_index` |
 
 ---
 
@@ -312,8 +317,8 @@ Query utama yang dilayani:
 
 | Butir | Dokumen Awal | Implementasi | Status |
 |---|---|---|---|
-| DBMS | MySQL | SQLite `node:sqlite` | Deviasi D-01 |
-| Migrasi | Framework migrations | `PRAGMA user_version` 1 → 3 | Deviasi D-01 |
+| DBMS | MySQL | SQLite (`pdo_sqlite`) | Deviasi D-01 |
+| Migrasi | Framework migrations | Migrasi Laravel (`database/migrations/`) | Deviasi D-01 |
 | Tabel | karyawan, absensi, kantor, users | Ditambah `hr_code_sequence` | Tambahan teknis |
 | Foto | Tidak dirancang | `in_photo`, `out_photo` + berkas fisik | Deviasi D-02 |
 | Koordinat | Tidak dirancang | `in_lat/lng`, `out_lat/lng`, jarak | Deviasi D-02 |
@@ -324,8 +329,8 @@ Detail deviasi lain ada di `01-SRS.md` §10.
 
 ## 9. Catatan Implementasi
 
-1. **Foto disimpan sebagai nama berkas**, bukan BLOB. Direktori `UPLOAD_DIR/attendance` (`src/middleware/upload.js:8`).
-2. **Hapus karyawan** menghapus baris lebih dulu, lalu berkas foto; kegagalan hapus berkas tidak membatalkan penghapusan data (`employees.js:103-122`).
+1. **Foto disimpan sebagai nama berkas**, bukan BLOB. Direktori `uploads/attendance` (`base_path('uploads/attendance')`, `app/Http/Controllers/Api/AttendanceController.php:101-118`).
+2. **Hapus karyawan** menghapus baris lebih dulu, lalu berkas foto; kegagalan hapus berkas tidak membatalkan penghapusan data (`app/Http/Controllers/Api/EmployeeController.php:250-289`).
 3. **Tidak ada tabel sesi**; JWT bersifat stateless. Logout hanya menghapus token di klien.
 4. **Zona waktu** tidak disimpan per baris. `work_date` dan `check_*_at` sudah dalam WIB, sehingga riwayat tetap terbaca benar meski server berpindah zona.
-5. **`attendances.status` NOT NULL** dan hanya menerima dua nilai; status `BELUM_*` tidak pernah masuk database.
+5. **`attendances.status` NOT NULL** dan hanya menerima dua nilai (`TEPAT_WAKTU`/`TERLAMBAT`) karena diisi `TimeService::attendanceStatus()`; status `BELUM_*` tidak pernah masuk database.

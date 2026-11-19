@@ -3,14 +3,14 @@
 
 | Item | Nilai |
 |---|---|
-| Versi | 1.0 |
-| Tanggal | 18 November 2026 |
+| Versi | 1.1 |
+| Tanggal | 18 November 2026 (diperbarui 19 November 2026) |
 | Cakupan otomasi | 61 test case (`10-Test-Case.md`) |
-| Perkakas | `node:test` (bawaan Node), `fetch`, `FormData`, `jsonwebtoken`, `node:sqlite` |
-| Status | **Sudah dijalankan** (18 November 2026) — 193 pemeriksaan; skrip uji bersifat ad hoc di folder temp, tidak di-commit (§0) |
-| Batasan | Tidak mengubah `test/attendance.test.js` milik repo |
+| Perkakas | PHPUnit (`php artisan test`), HTTP client (`curl`/`fetch`), `FormData` untuk unggah, SQLite langsung untuk verifikasi efek samping |
+| Status | **Sudah dijalankan** pada implementasi Node (18 Nov 2026) — 193 pemeriksaan. Resep di §3–§10 kini ditulis untuk Laravel (§0.3) |
+| Batasan | Tes repo (`tests/Feature/WorkforceAttendanceTest.php`) dijalankan apa adanya; skrip QA ad hoc tetap di folder temp dan tidak di-commit |
 
-> Bagian §0 mencatat **hasil pelaksanaan nyata** 18 November 2026. Bagian §1–§8 tetap berisi rencana dan contoh kode, yang kini berfungsi sebagai dokumentasi cara mengulang eksekusi — bukan sebagai klaim hasil.
+> Bagian §0 mencatat **hasil pelaksanaan nyata** 18 November 2026 terhadap implementasi Node yang kini sudah dihapus. §3–§10 adalah resep untuk mengulang siklus pada implementasi Laravel — bukan klaim hasil.
 
 ---
 
@@ -18,10 +18,10 @@
 
 | Item | Kenyataan saat eksekusi |
 |---|---|
-| Runtime | **Node v22.23.2** (`C:\Users\rayha\AppData\Local\nvm\v22.23.2\node.exe`); Node 20.18 memang gagal (`ERR_UNKNOWN_BUILTIN_MODULE`) |
+| Runtime | **Node v22.23.2** (`C:\Users\rayha\AppData\Local\nvm\v22.23.2\node.exe`); Node 20.18 memang gagal (`ERR_UNKNOWN_BUILTIN_MODULE`) — implementasi Node sudah dihapus 19 Nov 2026 |
 | `.env` | Tidak ada; `JWT_SECRET` memakai nilai cadangan dan dicatat sebagai OBS-02 (ST-39) |
-| Database | `DB_PATH` dan `UPLOAD_DIR` diarahkan ke folder temp QA, sehingga `data/test.db` dan `uploads/` repo tidak tersentuh |
-| Lokasi skrip | Folder temp (`qa/`), **tidak di-commit** agar `src/**`, `public/**`, dan `test/**` repo tidak berubah |
+| Database (Node) | `DB_PATH` dan `UPLOAD_DIR` (nama variabel era Node) diarahkan ke folder temp QA, sehingga data dan `uploads/` repo tidak tersentuh |
+| Lokasi skrip | Folder temp (`qa/`), **tidak di-commit** agar kode repo tidak berubah |
 | Browser driver | Puppeteer (Chrome headless 1440×900) untuk 4 TC manual |
 | Port server | 3311 |
 
@@ -29,27 +29,50 @@
 
 | Suite | Berkas | Jumlah | Lulus | Temuan |
 |---|---|---|---|---|
-| Unit test repo | `npm-test.txt` | 10 | 10 | — |
+| Unit test repo | `attendance.test.js` (Node, siklus 18 Nov) | 10 | 10 | — |
 | API inti | `hasil-api.json` | 109 | 109 | — |
 | API lanjutan | `hasil-extra.json` | 21 | 20 | BUG-01 (header keamanan) |
 | API penutup | `hasil-gaps.json` | 13 | 13 | — |
 | API probe | `hasil-probes.json` | 3 | 3 | — |
 | UI Web HR | `hasil-ui.json` | 18 | 18 | — |
-| UI Web HR lanjutan | `hasil-ui2.json` | 15 | 14 | BUG-02 (`TypeError` `app.js:374`) |
+| UI Web HR lanjutan | `hasil-ui2.json` | 15 | 14 | BUG-02 (`TypeError` `public/app.js:374`) |
 | UI Web HR penutup | `hasil-ui3.json` | 4 | 4 | — |
 | Keamanan | `hasil-sec.json`, `hasil-sec2.json` | 15 | 13 | OBS-01, OBS-02, OBS-05, OBS-11 |
 | **Total** | | **208** | **204** | **2 defect + 4 observasi terbukti** |
 
 Catatan: tabel ini menggabungkan pemeriksaan fungsional dan keamanan; angka yang dipakai pada `18-Test-Summary-Report.md` §5 (193 pemeriksaan fungsional) **tidak** menghitung suite keamanan agar tidak terjadi penghitungan ganda dengan `16-Security-Test-Checklist.md`.
 
+### 0.1a Verifikasi pada Laravel (19 November 2026)
+
+| Suite | Perintah | Jumlah | Hasil |
+|---|---|---|---|
+| Tes fitur repo | `php artisan test` | 5 metode / 27 assertion | **5/5 Lulus** |
+| Asap API (server nyata) | `php artisan serve` + 18 request | 18 | **18/18 Lulus** |
+| Validasi foto (IN/OUT) | 11 skenario multipart | 11 | Sesuai harapan; `INVALID_PHOTO`/`PHOTO_REQUIRED`/`GPS_REQUIRED`/`OUTSIDE_RADIUS` benar |
+| Rate limit | 70 percobaan login | 70 | 60×`401` lalu 10×`429` |
+
+**Batasan penting:** 61 TC **belum** diulang penuh pada Laravel. Angka 61/61 Lulus tetap milik siklus Node (18 Nov 2026). Bila siklus Laravel dijalankan, hasilnya harus dicatat sebagai siklus baru — jangan menimpa angka lama.
+
 ### 0.2 Pola yang terbukti berhasil
 
 1. **Satu klien kecil di atas `fetch`** (`api(method, path, {token, json})`) cukup untuk seluruh endpoint; tidak perlu Postman.
-2. **`node:sqlite`** dapat membaca database QA langsung untuk memverifikasi efek samping (jumlah baris, `password_hash`, `in_photo`) — lebih kuat daripada memercayai respons API.
+2. **Akses SQLite langsung** (dulu `node:sqlite`, kini `sqlite3`/`php artisan tinker`) dapat memverifikasi efek samping (jumlah baris, `password_hash`, `in_photo`) — lebih kuat daripada memercayai respons API.
 3. **Puppeteer** menangkap `pageerror` dan `console` sehingga regresi frontend tidak lolos diam-diam.
 4. **Database terpisah per siklus** membuat hitungan `belum_in`/`sudah_in` dan penomoran `kyNN` dapat diprediksi.
 
-### 0.3 Asersi yang sempat salah (bukan bug aplikasi)
+### 0.3 Cara Mengulang pada Laravel
+
+| Langkah | Perintah | Catatan |
+|---|---|---|
+| Prasyarat | `composer install` | `vendor/` tidak di-commit |
+| Konfigurasi | `cp .env.example .env` lalu `php artisan key:generate` | Isi `JWT_SECRET`, ganti `HR_PASSWORD` |
+| Database bersih | arahkan `DB_DATABASE` ke berkas tes, lalu `php artisan migrate --force` | Jangan pakai DB demo |
+| Seed | `php artisan db:seed --force` | Membuat akun HR + office demo |
+| Tes fitur | `php artisan test` | 5 metode / 27 assertion |
+| Server | `php artisan serve --port=8010` | Port bebas |
+| Bersihkan | hapus berkas DB tes dan folder `uploads/` | Sebelum siklus berikutnya |
+
+### 0.4 Asersi yang sempat salah (bukan bug aplikasi)
 
 Selama penulisan suite, tiga pemeriksaan awal berstatus merah dan setelah ditelusuri ternyata **asersi ujinya** yang keliru, bukan kode aplikasi:
 
@@ -63,16 +86,17 @@ Pelajaran: kegagalan pertama harus diuji dengan **dua pembacaan** (respons + kea
 
 ---
 
-## 1. Prasyarat (Status per 18 November 2026)
+## 1. Prasyarat (Status per 19 November 2026)
 
 | Hal | Fakta | Akibat |
 |---|---|---|
-| Runtime | Mesin saat ini **Node v20.18.0**; `package.json` menuntut `>=22.13` | `require('node:sqlite')` gagal (`ERR_UNKNOWN_BUILTIN_MODULE`) → server dan tes tidak dapat dijalankan |
-| Berkas `.env` | Tidak ada; `src/config.js:13,19` memakai nilai cadangan | Login berjalan dengan kredensial bawaan; tidak layak untuk tes yang sah |
+| Runtime | PHP **8.5.12** (memenuhi Laravel 10, butuh ≥ 8.1) + ekstensi `pdo_sqlite` | Server jalan; `php artisan test` lulus |
+| Berkas `.env` | Tidak ada di repo; dibuat dari `.env.example` untuk verifikasi | Tanpa `.env`, seed memakai cadangan → OBS-02 (ST-39/ST-40) |
+| Dependensi | `vendor/` tidak di-commit | `composer install` wajib sebelum tes |
 | Aplikasi mobile | Tidak ada | Alur Employee hanya dapat diotomasi pada level API |
-| Browser driver | Belum terpasang | 4 test case UI belum dapat diotomasi |
+| Browser driver | Puppeteer/Playwright tidak menjadi prasyarat repo | 4 TC UI tetap dapat manual + screenshot |
 
-**Kesimpulan (diperbarui 18 Nov 2026):** dua prasyarat pertama sudah teratasi — Node v22.23.2 tersedia dan database QA terpisah dipakai. `.env` tetap tidak ada, sehingga pengujian dilakukan dengan secret cadangan dan hasilnya dicatat sebagai OBS-02. Aplikasi mobile dan browser driver bukan penghalang: alur Employee diuji di level API dan TC manual dijalankan dengan Puppeteer.
+**Kesimpulan:** prasyarat Laravel terpenuhi pada mesin verifikasi (PHP 8.5.12, 5/5 tes fitur lulus, 18/18 asap API). `.env` tetap tidak ada di repo sehingga hasil siklus baru harus mencatat secret yang dipakai (OBS-02).
 
 ---
 
@@ -92,8 +116,8 @@ flowchart LR
     A["TC kandidat"] --> B{"Butuh render<br/>browser?"}
     B -- "ya" --> C["Playwright"]
     B -- "tidak" --> D{"Butuh DB /<br/>waktu tetap?"}
-    D -- "ya" --> E["node:test +<br/>node:sqlite"]
-    D -- "tidak" --> F["node:test +<br/>fetch"]
+    D -- "ya" --> E["PHPUnit +<br/>SQLite"]
+    D -- "tidak" --> F["Klien HTTP +<br/>artisan test"]
     C --> G["Simpan bukti<br/>screenshot + trace"]
     E --> H["Simpan output<br/>TAP"]
     F --> H
@@ -107,11 +131,11 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    subgraph S["Persiapan (sekali per berkas)"]
-        S1["Set DB_PATH + UPLOAD_DIR unik"]
-        S2["Hapus DB & folder unggahan"]
-        S3["Impor app (seed otomatis)"]
-        S4["Mulai server di port acak"]
+    subgraph S["Persiapan (sekali per siklus)"]
+        S1["Arahkan DB_DATABASE ke berkas tes"]
+        S2["Hapus DB & folder uploads/"]
+        S3["php artisan migrate + db:seed"]
+        S4["php artisan serve --port=<bebas>"]
     end
 
     subgraph T["Tiap tes"]
@@ -133,59 +157,53 @@ Prinsip:
 
 | Prinsip | Alasan |
 |---|---|
-| Satu berkas tes = satu database | Menghindari saling ganggu |
-| Port acak (`listen(0)`) | Bisa dijalankan paralel |
+| Satu siklus tes = satu database | Menghindari saling ganggu |
+| Port bebas (`--port`) | Bisa dijalankan berdampingan |
 | Tidak bergantung jam nyata | Hasil dapat diulang |
-| Bersihkan berkas unggahan | Mencegah penumpukan & salah hitung |
-| Tidak menulis kredensial di kode | Ambil dari `process.env` |
+| Bersihkan `uploads/` | Mencegah penumpukan & salah hitung |
+| Tidak menulis kredensial di kode | Ambil dari `.env`/environment |
 
 ---
 
-## 4. Kerangka Dasar (Contoh)
+## 4. Kerangka Dasar (Contoh, Laravel)
 
-Simpan sebagai `qa/helpers.mjs` **bila** otomasi disetujui. Tidak menyentuh `test/` milik repo.
+Contoh memakai HTTP client apa pun (curl/Insomnia/Python) di luar repo. Tes yang berjalan **di dalam** repo memakai PHPUnit seperti pada `tests/Feature/WorkforceAttendanceTest.php`.
 
-```js
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
+```bash
+# Simpan konfigurasi di environment, jangan di kode
+export QA_BASE=http://127.0.0.1:8010
+export HR_EMAIL=...        # dari .env
+export HR_PASSWORD=...     # dari .env
 
-export const BASE = process.env.QA_BASE || 'http://127.0.0.1:3999';
+# Login -> token
+TOKEN=$(curl -s -X POST "$QA_BASE/api/login" \
+  -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$HR_EMAIL\",\"password\":\"$HR_PASSWORD\"}" |
+  python -c 'import sys,json;print(json.load(sys.stdin)["token"])')
 
-export async function api(path, { token, method = 'GET', body, form } = {}) {
-  const headers = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  if (body) headers['Content-Type'] = 'application/json';
-  const res = await fetch(BASE + path, {
-    method,
-    headers,
-    body: form || (body ? JSON.stringify(body) : undefined),
-  });
-  const text = await res.text();
-  let json = null;
-  try { json = text ? JSON.parse(text) : null; } catch { /* bukan JSON */ }
-  return { status: res.status, json, text };
-}
+# Panggil endpoint terproteksi
+curl -s "$QA_BASE/api/employees" -H "Authorization: Bearer $TOKEN"
+```
 
-export async function login(email, password) {
-  const r = await api('/api/login', { method: 'POST', body: { email, password } });
-  if (r.status !== 200) throw new Error(`login gagal: ${r.status} ${r.text}`);
-  return r.json.token;
-}
+```php
+<?php
+// tests/Feature/ContohAbsensiTest.php — pola di dalam repo
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-/** PNG 1x1 — cukup untuk lolos validasi MIME & ukuran */
-export const PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-  'base64'
-);
+class ContohAbsensiTest extends TestCase
+{
+    use RefreshDatabase;
 
-export function photoForm(lat, lng, name = 'photo') {
-  const fd = new FormData();
-  fd.set('lat', String(lat));
-  fd.set('lng', String(lng));
-  fd.set(name, new Blob([PNG], { type: 'image/png' }), 'selfie.png');
-  return fd;
+    public function test_tanpa_token_ditolak(): void
+    {
+        $this->getJson('/api/me')->assertStatus(401)
+            ->assertJsonPath('error.code', 'UNAUTHORIZED');
+    }
 }
 ```
+
+Foto uji: gunakan PNG/JPEG **nyata** minimal 1×1 (bukan byte acak), karena validasi Laravel memakai `getMimeType()` (finfo). PNG 1×1 cukup untuk lolos cek tipe & ukuran.
 
 ---
 
@@ -193,144 +211,155 @@ export function photoForm(lat, lng, name = 'photo') {
 
 ### 5.1 TC-AUTH-01 — Tanpa token harus 401
 
-```js
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { api } from './helpers.mjs';
-
-test('TC-AUTH-01: tanpa token => 401 UNAUTHORIZED', async () => {
-  for (const path of ['/api/me', '/api/attendance/today', '/api/employees']) {
-    const r = await api(path);
-    assert.equal(r.status, 401, path);
-    assert.equal(r.json.error.code, 'UNAUTHORIZED', path);
-    assert.equal(r.json.data, undefined, 'tidak boleh ada data');
-  }
-});
+```php
+public function test_tanpa_token_ditolak(): void
+{
+    foreach (['/api/me', '/api/attendance/today', '/api/employees'] as $path) {
+        $res = $this->getJson($path);
+        $res->assertStatus(401)->assertJsonPath('error.code', 'UNAUTHORIZED');
+        $this->assertArrayNotHasKey('data', $res->json());
+    }
+}
 ```
 
 ### 5.2 TC-AUTH-06 — Employee tidak boleh menembus endpoint HR
 
-```js
-test('TC-AUTH-06: Employee ke endpoint HR => 403', async () => {
-  const token = await login(process.env.QA_EMP_EMAIL, process.env.QA_EMP_PASSWORD);
-  const paths = [
-    ['GET', '/api/employees'], ['POST', '/api/employees'],
-    ['GET', '/api/admins'],    ['POST', '/api/admins'],
-    ['GET', '/api/dashboard/attendance'],
-    ['GET', '/api/attendance'],
-  ];
-  for (const [method, path] of paths) {
-    const r = await api(path, { method, token, body: method === 'POST' ? {} : undefined });
-    assert.equal(r.status, 403, `${method} ${path}`);
-    assert.equal(r.json.error.code, 'FORBIDDEN', `${method} ${path}`);
-  }
-});
+```php
+public function test_employee_tidak_boleh_endpoint_hr(): void
+{
+    $token = $this->loginAs('EMPLOYEE');
+    $paths = [
+        ['GET', '/api/employees'], ['POST', '/api/employees'],
+        ['GET', '/api/admins'],    ['POST', '/api/admins'],
+        ['GET', '/api/dashboard/attendance'],
+        ['GET', '/api/attendance'],
+    ];
+    foreach ($paths as [$method, $path]) {
+        $this->json($method, $path, [], ['Authorization' => "Bearer {$token}"])
+            ->assertStatus(403)
+            ->assertJsonPath('error.code', 'FORBIDDEN');
+    }
+}
 ```
 
 ### 5.3 TC-ATT-01 — IN pertama berhasil (multipart)
 
-```js
-test('TC-ATT-01: IN pertama => 201 + status sah', async () => {
-  const token = await login(process.env.QA_EMP_EMAIL, process.env.QA_EMP_PASSWORD);
-  const r = await api('/api/attendance/check-in', {
-    method: 'POST', token,
-    form: photoForm(-7.4296, 111.0095),
-  });
-  assert.equal(r.status, 201);
-  assert.ok(['TEPAT_WAKTU', 'TERLAMBAT'].includes(r.json.data.status));
-  assert.ok(r.json.data.check_in_at);
-  assert.equal(typeof r.json.data.check_in.distance_m, 'number');
-});
+```php
+public function test_in_pertama_berhasil(): void
+{
+    $token = $this->loginAs('EMPLOYEE');
+    $res = $this->post('/api/attendance/check-in', [
+        'lat' => '-7.4296',
+        'lng' => '111.0095',
+        'photo' => UploadedFile::fake()->image('selfie.png', 4, 4),
+    ], ['Authorization' => "Bearer {$token}", 'Accept' => 'application/json']);
+
+    $res->assertStatus(201);
+    $this->assertContains($res->json('status'), ['TEPAT_WAKTU', 'TERLAMBAT']);
+    $this->assertNotEmpty($res->json('check_in_at'));
+}
 ```
 
 ### 5.4 TC-ATT-02 — IN kedua tidak menduplikasi
 
-```js
-test('TC-ATT-02: IN kedua => 409 dan tetap 1 record', async () => {
-  const token = await login(process.env.QA_EMP_EMAIL, process.env.QA_EMP_PASSWORD);
-  const r = await api('/api/attendance/check-in', { method: 'POST', token, form: photoForm(-7.4296, 111.0095) });
-  assert.equal(r.status, 409);
-  assert.equal(r.json.error.code, 'ALREADY_CHECKED_IN');
+```php
+public function test_in_kedua_ditolak(): void
+{
+    $token = $this->loginAs('EMPLOYEE');
+    $payload = [
+        'lat' => '-7.4296', 'lng' => '111.0095',
+        'photo' => UploadedFile::fake()->image('selfie.png', 4, 4),
+    ];
+    $headers = ['Authorization' => "Bearer {$token}", 'Accept' => 'application/json'];
 
-  const h = await api('/api/attendance/history', { token });
-  assert.equal(h.json.meta.total, 1);
-});
+    $this->post('/api/attendance/check-in', $payload, $headers)->assertStatus(201);
+    $this->post('/api/attendance/check-in', $payload, $headers)
+        ->assertStatus(409)
+        ->assertJsonPath('error.code', 'ALREADY_CHECKED_IN');
+
+    $this->assertSame(1, Attendance::count());
+}
 ```
 
 ### 5.5 TC-AUTH-05 — Token kedaluwarsa
 
-```js
-import jwt from 'jsonwebtoken';
-
-test('TC-AUTH-05: token kedaluwarsa => 401', async () => {
-  const expired = jwt.sign({ sub: 1, role: 'HR' }, process.env.JWT_SECRET, { expiresIn: '-1s' });
-  const r = await api('/api/me', { token: expired });
-  assert.equal(r.status, 401);
-  assert.equal(r.json.error.code, 'UNAUTHORIZED');
-});
+```php
+public function test_token_kedaluwarsa_ditolak(): void
+{
+    $expired = app(JwtService::class)->issue(1, 'HR', -60); // exp lampau
+    $this->getJson('/api/me', ['Authorization' => "Bearer {$expired}"])
+        ->assertStatus(401)
+        ->assertJsonPath('error.code', 'UNAUTHORIZED');
+}
 ```
 
-> Catatan: `expiresIn: '-1s'` lebih andal daripada menunggu 1 detik nyata.
+> Catatan: buat token dengan `exp` lampau secara eksplisit, jangan menunggu waktu nyata.
 
-### 5.6 TC-ATT-12 — Berkas yatim dihapus
+### 5.6 TC-ATT-12 — Berkas tidak bertambah saat ditolak
 
-```js
-import fs from 'node:fs';
-import path from 'node:path';
+```php
+public function test_ditolak_radius_tidak_menambah_berkas(): void
+{
+    $dir = base_path('uploads/attendance');
+    $before = is_dir($dir) ? count(scandir($dir)) - 2 : 0;
 
-const uploadDir = process.env.UPLOAD_DIR;
-const countFiles = () => fs.readdirSync(path.join(uploadDir, 'attendance')).length;
+    $token = $this->loginAs('EMPLOYEE');
+    $this->post('/api/attendance/check-in', [
+        'lat' => '-6.2', 'lng' => '106.8',
+        'photo' => UploadedFile::fake()->image('selfie.png', 4, 4),
+    ], ['Authorization' => "Bearer {$token}", 'Accept' => 'application/json'])
+        ->assertStatus(403)
+        ->assertJsonPath('error.code', 'OUTSIDE_RADIUS');
 
-test('TC-ATT-12: ditolak karena radius => tidak ada berkas baru', async () => {
-  const token = await login(process.env.QA_EMP_EMAIL, process.env.QA_EMP_PASSWORD);
-  const before = countFiles();
-  const r = await api('/api/attendance/check-in', { method: 'POST', token, form: photoForm(-6.2, 106.8) });
-  assert.equal(r.status, 403);
-  assert.equal(r.json.error.code, 'OUTSIDE_RADIUS');
-  assert.equal(countFiles(), before, 'berkas yatim harus dihapus');
-});
+    $after = is_dir($dir) ? count(scandir($dir)) - 2 : 0;
+    $this->assertSame($before, $after, 'berkas ditolak tidak boleh tersimpan');
+}
 ```
 
 ---
 
 ## 6. Contoh Tes Unit — Batas 08:15 (TC-ATT-13)
 
-Tes ini **tidak membutuhkan server maupun `node:sqlite`**, sehingga dapat dijalankan bahkan pada Node 20.
+Tes ini **tidak membutuhkan server**, sehingga cepat dan deterministik.
 
-```js
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const T = require('../src/utils/time.js');
+```php
+use App\Services\TimeService;
 
-test('TC-ATT-13: 08:15 TEPAT_WAKTU, 08:16 TERLAMBAT', () => {
-  // 01:15Z = 08:15 WIB
-  assert.equal(T.attendanceStatus(new Date('2026-11-18T01:15:00Z')), 'TEPAT_WAKTU');
-  // 01:16Z = 08:16 WIB
-  assert.equal(T.attendanceStatus(new Date('2026-11-18T01:16:00Z')), 'TERLAMBAT');
-});
+public function test_batas_0815_dan_0816(): void
+{
+    // TimeService memakai zona Asia/Jakarta; cukup beri DateTime dengan offset WIB
+    $tepat = new DateTime('2026-11-18 08:15:00+07:00');
+    $telat = new DateTime('2026-11-18 08:16:00+07:00');
 
-test('TC-ATT-13b: 08:14 juga TEPAT_WAKTU', () => {
-  assert.equal(T.attendanceStatus(new Date('2026-11-18T01:14:59Z')), 'TEPAT_WAKTU');
-});
+    $this->assertSame('TEPAT_WAKTU', TimeService::attendanceStatus($tepat));
+    $this->assertSame('TERLAMBAT', TimeService::attendanceStatus($telat));
+}
+
+public function test_0814_masih_tepat_waktu(): void
+{
+    $t = new DateTime('2026-11-18 08:14:59+07:00');
+    $this->assertSame('TEPAT_WAKTU', TimeService::attendanceStatus($t));
+}
 ```
 
 **Mengapa penting:** aturan ini adalah inti penilaian kedisiplinan. Kesalahan satu menit mengubah status seluruh karyawan. Tes unit membuatnya dapat diuji ulang kapan saja tanpa menunggu jam tertentu.
+
+> `TimeService::attendanceStatus(?DateTime $d = null)` menerima waktu eksplisit (`app/Services/TimeService.php:38-47`), sehingga tes tidak perlu menunggu jam nyata.
 
 ---
 
 ## 7. Contoh Tes DB (TC-ATT-14)
 
-```js
-import { DatabaseSync } from 'node:sqlite';
+```php
+use Illuminate\Support\Facades\DB;
 
-test('TC-ATT-14: status tersimpan hanya dua nilai', () => {
-  const db = new DatabaseSync(process.env.DB_PATH);
-  const rows = db.prepare('SELECT DISTINCT status FROM attendances').all();
-  db.close();
-  for (const r of rows) assert.ok(['TEPAT_WAKTU', 'TERLAMBAT'].includes(r.status));
-});
+public function test_status_tersimpan_hanya_dua_nilai(): void
+{
+    $rows = DB::table('attendances')->distinct()->pluck('status');
+    foreach ($rows as $s) {
+        $this->assertContains($s, ['TEPAT_WAKTU', 'TERLAMBAT']);
+    }
+}
 ```
 
 ---
@@ -347,17 +376,18 @@ test('TC-ATT-14: status tersimpan hanya dua nilai', () => {
 Kerangka minimal:
 
 ```js
+// qa/ui.spec.mjs — dijalankan di luar repo, bukan bagian tests/ Laravel
 import { chromium } from 'playwright';
+import { test, expect } from '@playwright/test';
 
 test('TC-AUTH-09: token rusak => kembali ke Login', async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.goto(process.env.QA_BASE);
-  await page.evaluate(() => localStorage.setItem('token', 'rusak'));
+  await page.evaluate(() => localStorage.setItem('hr_token', 'rusak'));
   await page.reload();
   await page.waitForSelector('#login');
-  const text = await page.textContent('body');
-  assert.ok(!text.includes('Dashboard'));
+  await expect(page.locator('body')).not.toContainText('Dashboard');
   await browser.close();
 });
 ```
@@ -391,16 +421,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: shivammathur/setup-php@v2
         with:
-          node-version: '22.13'
-      - run: npm ci || npm install
-      - run: npm test
+          php-version: '8.2'
+          extensions: pdo_sqlite, mbstring, openssl
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      - run: touch database/database.sqlite && php artisan migrate --force
+      - run: php artisan test
         env:
           JWT_SECRET: ${{ secrets.CI_JWT_SECRET }}
 ```
 
-**Catatan:** `node-version: 22.13` wajib — bukan `20`, karena `node:sqlite` belum tersedia. Ini juga alasan RISK-01.
+**Catatan:** pakai PHP **≥ 8.1** dengan ekstensi `pdo_sqlite`; tidak perlu Node sama sekali setelah cleanup 19 Nov 2026. Ini menggantikan RISK-01 versi Node.
 
 ---
 
@@ -408,14 +441,13 @@ jobs:
 
 | Jangan | Lakukan |
 |---|---|
-| Mengandalkan jam nyata untuk status | Pakai tanggal tetap + `attendanceStatus` |
-| Memakai satu DB untuk semua tes | DB unik per berkas |
-| Menganggap urutan berkas tes pasti | Tes harus mandiri |
+| Mengandalkan jam nyata untuk status | Pakai `TimeService::attendanceStatus()` dengan `DateTime` tetap |
+| Memakai satu DB untuk semua siklus | DB unik per siklus (`.env` tes) |
+| Menganggap urutan tes pasti | Tes harus mandiri |
 | Menulis `200` untuk semua endpoint | Periksa status **dan** `error.code` |
-| Memakai `assert.ok(res)` | Periksa bentuk respons spesifik |
-| Menghapus data tes secara manual di tengah tes | Bersihkan di `after`, bukan di tengah |
-| Menyimpan token/kata sandi di kode | Ambil dari environment |
-| Membiarkan berkas unggahan menumpuk | Hitung sebelum/sesudah |
+| Memakai `assertTrue($res)` | Periksa bentuk respons spesifik |
+| Menghapus data tes secara manual di tengah tes | Bersihkan di `tearDown`, bukan di tengah |
+| Menyimpan token/kata sandi di kode | Ambil dari `.env` |
 
 ---
 
@@ -443,14 +475,10 @@ jobs:
 
 | Berkas usulan | Isi | Status |
 |---|---|---|
-| `qa/helpers.mjs` | Klien API, login, form foto | Belum dibuat |
-| `qa/auth.test.mjs` | `TC-AUTH-01` … `TC-AUTH-06`, `TC-AUTH-08` | Belum dibuat |
-| `qa/attendance.test.mjs` | `TC-ATT-01` … `TC-ATT-14` | Belum dibuat |
-| `qa/history.test.mjs` | `TC-HIS-01` … `TC-HIS-08`, `TC-HIS-10` | Belum dibuat |
-| `qa/time.test.mjs` | `TC-ATT-13` | Belum dibuat |
-| `qa/ui.spec.mjs` | `TC-AUTH-09`, `TC-HIS-09`, `TC-WEB-01`, `TC-WEB-02` | Belum dibuat |
+| `tests/Feature/WorkforceAttendanceTest.php` | Tes fitur repo: auth gate, unmatched employee, absensi, office/dashboard | **Ada** — 5 metode / 27 assertion, `php artisan test` 5/5 Lulus |
+| `qa/` (helper + suite TC) | Klien HTTP, login, form foto, suite 61 TC | Belum dibuat; resep di §4–§7 |
 
-**Mengapa belum dibuat:** menulis berkas kode baru di luar `docs/` berada di luar kewenangan build ini, dan saat ini tidak dapat diverifikasi karena Node di mesin belum memenuhi syarat. Dokumen ini menyediakan resepnya agar dapat langsung dieksekusi setelah prasyarat terpenuhi.
+**Mengapa suite TC penuh belum dibuat:** menulis berkas kode baru di luar `docs/` berada di luar kewenangan build ini. Tes fitur repo sudah ada dan lulus; resep di dokumen ini siap dieksekusi bila siklus Laravel penuh dijalankan.
 
 ---
 

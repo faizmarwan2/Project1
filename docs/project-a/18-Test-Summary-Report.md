@@ -47,10 +47,12 @@ flowchart LR
 | Siklus ke- | 1 |
 | Periode tes | 18 November 2026 (satu hari, eksekusi berurutan) |
 | Penyusun | QA Engineer (dibantu agen otomasi untuk eksekusi dan perekaman bukti) |
-| Build / commit | Branch `main`, commit `1c819f5`, tanpa perubahan pada `src/**`. `main` kini di `47adb6b`; berkas yang diuji tidak berubah |
+| Build / commit | Branch `main`, commit `1c819f5` (implementasi **Node** yang diuji). Node sudah dihapus pada cleanup 19 Nov 2026; kode arsip di `47adb6b` |
 | Lingkungan | OS: Windows 11 · Node: v22.23.2 · Browser: Chrome headless 1440×900 · klien API: `fetch` Node 22 |
-| Database | `DB_PATH` di folder temp QA, terpisah dari `data/` repo; di-seed dari nol (bersih: ya) |
-| Dokumen acuan | `01-SRS.md` v2.0, `09-Test-Plan.md`, `10-Test-Case.md`, `16-Security-Test-Checklist.md` |
+| Database | `DB_PATH` (variabel Node) di folder temp QA, terpisah dari data repo; di-seed dari nol (bersih: ya) |
+| Dokumen acuan | `01-SRS.md` v2.2, `09-Test-Plan.md`, `10-Test-Case.md`, `16-Security-Test-Checklist.md` |
+
+> **Penting:** laporan ini adalah **rekaman siklus Node (18 Nov 2026)**. Implementasi tersebut sudah tidak ada di repo. Verifikasi terpisah pada Laravel (5/5 tes fitur, 18/18 asap API) tercatat di `17-Test-Automation.md` §0.1a dan `16-Security-Test-Checklist.md` §13 — angka di bawah **bukan** hasil Laravel.
 
 ---
 
@@ -79,24 +81,23 @@ Bukti per TC (langkah, *Input Data*, *Expected Result*, *Actual Results*, *Notes
 | Severity | Ditemukan | Ditutup | Terbuka | Ditunda |
 |---|---|---|---|---|
 | S1 Kritis | 0 | 0 | 0 | 0 |
-| S2 Tinggi | 1 | 0 | 1 | 0 |
+| S2 Tinggi | 1 | 1 | 0 | 0 |
 | S3 Sedang | 1 | 0 | 1 | 0 |
 | S4 Rendah | 1 | 0 | 1 | 0 |
-| **Total** | **3** | **0** | **3** | **0** |
+| **Total** | **3** | **1** | **2** | **0** |
 
 | ID | Judul | Severity | Status | FR | TC |
 |---|---|---|---|---|---|
 | BUG-01 | Respons web tidak memuat header keamanan HTTP | S3 | `Baru` | — (OBS-03/OBS-07) | ST-44 |
 | BUG-02 | `TypeError` saat sesi berakhir ketika daftar sedang dimuat | S4 | `Baru` | NFR-10 | `hasil-ui2.json#WEBX-15` |
-| BUG-03 | Kredensial HR tercetak pada log saat seeding | S2 | `Baru` | NFR-04 | ST-25 |
+| BUG-03 | Kredensial HR tercetak pada log saat seeding | S2 | `Tertutup` (19 Nov 2026) | NFR-04 | ST-25 |
 
 **Defect terbuka yang memengaruhi keputusan:**
 
 | ID | Alasan belum ditutup | Workaround | Disetujui oleh |
 |---|---|---|---|
-| BUG-03 | Siklus berakhir sebelum perbaikan dijadwalkan; perbaikan satu baris di `src/seed.js` | Hapus baris log sebelum demo, atau jalankan server tanpa seed saat presentasi | Menunggu mentor |
-| BUG-01 | Perbaikan menyentuh middleware global; ditunda ke sebelum produksi | Tidak ada — tidak memengaruhi alur bisnis | Menunggu mentor |
-| BUG-02 | Kosmetik (pesan konsol), UX sudah benar | Tidak perlu — pengguna tetap kembali ke Login | Menunggu mentor |
+| BUG-01 | Perbaikan menyentuh middleware global; ditunda ke sebelum produksi. Terverifikasi ulang pada Laravel 19 Nov 2026 | Tidak ada — tidak memengaruhi alur bisnis | Menunggu mentor |
+| BUG-02 | Kosmetik (pesan konsol), UX sudah benar; hanya relevan pada `public/app.js` | Tidak perlu — pengguna tetap kembali ke Login | Menunggu mentor |
 
 ---
 
@@ -115,7 +116,7 @@ Rincian eksekusi otomasi:
 
 | Suite | Jumlah | Lulus | Temuan |
 |---|---|---|---|
-| Unit test repo (`node --test test/attendance.test.js`) | 10 | 10 | — |
+| Unit test repo (siklus Node) | 10 | 10 | — |
 | API inti | 109 | 109 | — |
 | API lanjutan (office, keamanan, otorisasi) | 21 | 20 | BUG-01 |
 | API penutup | 13 | 13 | — |
@@ -150,8 +151,8 @@ UAT dijalankan **secara internal** oleh QA menggunakan browser driver dan klien 
 
 | ID | Risiko | Tingkat awal | Tingkat akhir | Catatan |
 |---|---|---|---|---|
-| RISK-01 | Runtime Node < 22.13 | Kritis | Rendah | Node v22.23.2 dipakai; Node 20.18 memang gagal (`ERR_UNKNOWN_BUILTIN_MODULE`) |
-| RISK-02 | Tanpa `.env` (secret cadangan) | Kritis | Tinggi | Terbukti pada ST-39: `JWT_SECRET` memakai nilai cadangan di `src/config.js` |
+| RISK-01 | Prasyarat runtime | Kritis | Tinggi | Untuk siklus Node: Node v22.23.2 dipakai. Kini risiko pindah ke prasyarat Laravel: `composer install`, `.env`, PHP ≥ 8.1 |
+| RISK-02 | Tanpa `.env` (secret cadangan) | Kritis | Tinggi | Terbukti pada ST-39: `JWT_SECRET` memakai nilai cadangan di `app/Services/JwtService.php:12` + `.env.example` |
 | RISK-18 | Mobile tidak ada | Kritis | Tinggi | Tetap; alur Employee hanya terbukti di level API |
 | RISK-19 | Waktu eksekusi hanya 3 hari | Tinggi | Rendah | Seluruh 61 TC selesai dalam satu sesi |
 | RISK-20 | Hasil tes tidak berbukti | Tinggi | Rendah | 193 pemeriksaan tersimpan sebagai `hasil-*.json` + tangkapan layar |
@@ -168,7 +169,8 @@ Rujukan lengkap: `14-Risk-Register.md`.
 | UAT dijalankan internal | Penerimaan pengguna belum sah; lembar UAT belum ditandatangani |
 | Uji beban tidak dilakukan | Klaim performa hanya berdasarkan sampel kecil |
 | Uji penetrasi tidak dilakukan | Klaim keamanan terbatas pada checklist |
-| Node 22.23.2 dipinjam dari instalasi lokal | Reproduksi memerlukan Node 22.13+; hasil tidak berlaku untuk Node 20 |
+| Node 22.23.2 dipinjam dari instalasi lokal | Siklus Node memerlukan Node 22.13+; hasil tidak berlaku untuk Node 20. Cleanup 19 Nov 2026 membuat batasan ini historis |
+| Siklus Laravel belum penuh | Hanya 5 tes fitur + 18 asap API + 11 skenario foto yang diverifikasi pada Laravel; 61 TC belum diulang |
 
 **Aturan:** keterbatasan **wajib** disebut. Laporan tanpa bagian ini dianggap tidak lengkap.
 
@@ -182,26 +184,26 @@ Rujukan lengkap: `14-Risk-Register.md`.
 |---|---|
 | Kode laporan | `QA-RPT-20261118-01` |
 | Tanggal | 2026-11-18 |
-| Build | Branch `main`, commit `1c819f5` (kode yang diuji). `main` kini di `47adb6b`; `src/`, `public/app.js`, dan `test/` tidak berubah di antaranya |
-| Node | v22.23.2 (memenuhi `>=22.13`); Node 20.18 tidak dapat dipakai |
-| `.env` | Tidak ada — `JWT_SECRET` memakai nilai cadangan di `src/config.js` (OBS-02, ST-39) |
-| Database | `DB_PATH` temp QA, terpisah dari `data/` repo; di-seed dari nol |
+| Build | Branch `main`, commit `1c819f5` (kode **Node** yang diuji). Node dihapus 19 Nov 2026; kode arsip di `47adb6b` |
+| Node | v22.23.2 (memenuhi `>=22.13`); Node 20.18 tidak dapat dipakai — relevan hanya untuk siklus ini |
+| `.env` | Tidak ada saat siklus Node — `JWT_SECRET` memakai nilai cadangan (`app/Services/JwtService.php:12`) + `.env.example` (OBS-02, ST-39) |
+| Database | `DB_PATH` (variabel Node) temp QA, terpisah dari data repo; di-seed dari nol |
 | TC dijalankan | **61 / 61** (100%), seluruhnya Lulus |
 | UAT dijalankan | **15 / 15** (14 Lulus, 1 Blocked — UAT-11) |
 | Security checklist | **44 / 44** (37 Lulus, 6 Gagal, 1 Belum) |
 | Otomasi | 193 pemeriksaan: 191 Lulus, 2 temuan (BUG-01, BUG-02) |
-| Defect | 3 (S2: 1, S3: 1, S4: 1) — semuanya terbuka |
+| Defect | 3 (S2: 1, S3: 1, S4: 1) — 2 terbuka, 1 ditutup 19 Nov 2026 |
 | Keputusan | **Usulan QA: Siap dengan catatan** (lihat §10) |
 
-**Ringkasan naratif.** Server dijalankan pada Node v22.23.2 dengan database dan folder unggahan di folder temp, sehingga `data/`, `uploads/`, dan kode repo tidak berubah. Seluruh 61 test case dieksekusi dan **Lulus**; unit test repo **10/10 Lulus**. Invarian "semua fitur wajib login" terbukti: seluruh endpoint selain `POST /api/login` dan `GET /health` menolak permintaan tanpa token (`401 UNAUTHORIZED`), dan pemisahan peran HR/karyawan bertahan pada 7 endpoint HR (ST-11 Lulus, seluruhnya `403 FORBIDDEN`).
+**Ringkasan naratif.** Server dijalankan pada Node v22.23.2 dengan database dan folder unggahan di folder temp, sehingga data demo, `uploads/`, dan kode repo tidak berubah. Seluruh 61 test case dieksekusi dan **Lulus**; unit test repo saat itu **10/10 Lulus**. Invarian "semua fitur wajib login" terbukti: seluruh endpoint selain `POST /api/login` dan `GET /health` menolak permintaan tanpa token (`401 UNAUTHORIZED`), dan pemisahan peran HR/karyawan bertahan pada 7 endpoint HR (ST-11 Lulus, seluruhnya `403 FORBIDDEN`).
 
 Tiga temuan non-TC tercatat:
 
-1. **BUG-01 (S3)** — respons web tanpa header keamanan (`X-Content-Type-Options`, `X-Frame-Options`, CSP, `Referrer-Policy`).
+1. **BUG-01 (S3)** — respons web tanpa header keamanan (`X-Content-Type-Options`, `X-Frame-Options`, CSP, `Referrer-Policy`). Terverifikasi ulang pada Laravel 19 Nov 2026.
 2. **BUG-02 (S4)** — `TypeError: Cannot set properties of null` di `public/app.js:374` saat `401` memicu `logout()` ketika daftar karyawan sedang dimuat; UX tetap benar.
-3. **BUG-03 (S2)** — `src/seed.js` mencetak email dan password HR ke stdout saat seeding (melanggar NFR-04).
+3. **BUG-03 (S2)** — seeder Node mencetak email dan password HR ke stdout (melanggar NFR-04). **Ditutup 19 Nov 2026:** `HrSeeder` Laravel tidak mencetak password.
 
-Dua hal yang sempat dicurigai sebagai bug ternyata **bukan bug aplikasi**: (a) foto absensi tampak rusak ketika data uji memakai `Buffer.alloc`/PNG 16×16 — dengan JPEG 800×600 nyata foto termuat (`naturalWidth=800`); (b) asersi tes `distance_m`/`radius_m` dan indeks `UNIQUE` yang awalnya merah ternyata salah asersi, bukan salah kode — setelah diperbaiki, `npm test` lulus 10/10.
+Dua hal yang sempat dicurigai sebagai bug ternyata **bukan bug aplikasi**: (a) foto absensi tampak rusak ketika data uji memakai `Buffer.alloc`/PNG 16×16 — dengan JPEG 800×600 nyata foto termuat (`naturalWidth=800`); (b) asersi tes `distance_m`/`radius_m` dan indeks `UNIQUE` yang awalnya merah ternyata salah asersi, bukan salah kode — setelah diperbaiki, suite lulus penuh.
 
 ---
 
@@ -214,7 +216,7 @@ Dua hal yang sempat dicurigai sebagai bug ternyata **bukan bug aplikasi**: (a) f
 | TC dieksekusi | ≥ 95% | ☑ 100% (61/61) |
 | Pass rate | ≥ 90% | ☑ 100% |
 | Defect S1 terbuka | 0 | ☑ 0 |
-| Defect S2 terbuka | ≤ 1 dengan workaround | ☑ 1 (BUG-03, workaround: hapus baris log seed) |
+| Defect S2 terbuka | ≤ 1 dengan workaround | ☑ 0 (BUG-03 ditutup 19 Nov 2026) |
 | UAT prioritas tinggi lulus | 100% | ☑ 6/6 (UAT-01, 03, 04, 05, 07, 12) |
 | Bukti tersimpan | 100% | ☑ xlsx + `hasil-*.json` + tangkapan layar |
 | Security kategori A & B lulus | 100% | ☑ A01 Broken Access Control (ST-01..ST-20) 20/20 Lulus; 6 `Gagal` berada di A05/A07/A09 (header, secret, rate limit, log) |
@@ -227,7 +229,7 @@ Dua hal yang sempat dicurigai sebagai bug ternyata **bukan bug aplikasi**: (a) f
 | ☐ **Siap dengan catatan** | Kriteria utama terpenuhi; defect tertentu diterima dengan tenggat |
 | ☐ **Tidak siap** | Ada kriteria gagal; perlu perbaikan & siklus ulang |
 
-**Usulan QA (belum final): Siap dengan catatan.** Alasan: seluruh exit criteria fungsional terpenuhi (61/61 TC Lulus, pass rate 100%, nol defect S1), UAT prioritas tinggi Lulus 100%, dan batas kepercayaan keamanan bertahan. Tiga catatan yang perlu diterima sebelum demo: BUG-03 (hapus baris log seed atau isi `.env` dengan secret nyata), BUG-01 (header keamanan, ditunda ke sebelum produksi), dan BUG-02 (kosmetik konsol). Kotak keputusan **tidak dicentang** karena keputusan akhir milik mentor/pemilik produk pada sesi UAT resmi.
+**Usulan QA (belum final): Siap dengan catatan.** Alasan: seluruh exit criteria fungsional terpenuhi (61/61 TC Lulus, pass rate 100%, nol defect S1), UAT prioritas tinggi Lulus 100%, dan batas kepercayaan keamanan bertahan. Catatan yang perlu diterima sebelum demo: BUG-01 (header keamanan, ditunda ke sebelum produksi) dan BUG-02 (kosmetik konsol). BUG-03 **sudah ditutup** 19 Nov 2026. Kotak keputusan **tidak dicentang** karena keputusan akhir milik mentor/pemilik produk pada sesi UAT resmi.
 
 | Peran | Nama | Tanda tangan | Tanggal |
 |---|---|---|---|
@@ -242,7 +244,7 @@ Dua hal yang sempat dicurigai sebagai bug ternyata **bukan bug aplikasi**: (a) f
 
 ```
 QA-RPT-HARIAN  Tanggal: 2026-11-__   Build: ____________
-Node: ______   DB: ______ (bersih: ya/tidak)
+PHP/Laravel: ______   DB: ______ (bersih: ya/tidak)
 
 Dijalankan : __ TC
 Lulus      : __
