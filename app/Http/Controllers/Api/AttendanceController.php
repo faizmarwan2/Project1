@@ -46,6 +46,17 @@ class AttendanceController extends Controller
             throw new ApiException(400, 'File foto tidak valid', 'PHOTO_REQUIRED');
         }
 
+        // Hanya gambar JPEG/PNG/WEBP, maksimal 5 MB (BR-09, FR-ATT-15)
+        $allowedMimes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+        $mime = (string)$file->getMimeType();
+        if (!isset($allowedMimes[$mime])) {
+            throw new ApiException(400, 'Foto harus JPEG/PNG/WEBP', 'INVALID_PHOTO');
+        }
+
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            throw new ApiException(400, 'Foto maksimal 5 MB', 'INVALID_PHOTO');
+        }
+
         $lat = $request->input('lat') ?? $request->input('latitude');
         $lng = $request->input('lng') ?? $request->input('longitude');
 
@@ -92,7 +103,7 @@ class AttendanceController extends Controller
             File::makeDirectory($uploadDir, 0755, true);
         }
 
-        $ext = $file->getClientOriginalExtension() ?: 'jpg';
+        $ext = $allowedMimes[$mime];
         $filename = 'att_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $targetPath = $uploadDir . DIRECTORY_SEPARATOR . $filename;
         if (!@move_uploaded_file($file->getRealPath(), $targetPath)) {
