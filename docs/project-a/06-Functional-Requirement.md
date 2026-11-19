@@ -54,18 +54,18 @@ Scenario: Web HR menampilkan hanya layar Login
 
 | ID | Requirement | Pri | Status | Bukti | Tes |
 |---|---|---|---|---|---|
-| FR-EMP-01 | Tambah karyawan cukup dengan `name`; kode otomatis `kyNN`. | M | I | `app/Http/Controllers/Api/EmployeeController.php:41-51`, `app/Http/Controllers/Api/EmployeeController.php:130-186` | TC-EMP-02, TC-EMP-08 |
+| FR-EMP-01 | Tambah karyawan cukup dengan `name`; kode otomatis `kyNN`. | M | I | `app/Http/Controllers/Api/EmployeeController.php:41-56`, `app/Http/Controllers/Api/EmployeeController.php:135-191` | TC-EMP-02, TC-EMP-08 |
 | FR-EMP-02 | Email otomatis `nama.depan@ethes.tech`; bentrok diberi sufiks angka. | S | I | `app/Http/Controllers/Api/EmployeeController.php:18-39` | TC-EMP-02, TC-EMP-03 |
-| FR-EMP-03 | Akun login dibuat bersamaan; password acak 12 karakter ditampilkan **sekali**. | M | I | `app/Http/Controllers/Api/EmployeeController.php:144-148`, `app/Http/Controllers/Api/EmployeeController.php:182-185` | TC-EMP-01, TC-EMP-02 |
-| FR-EMP-04 | `employee_code`, `email`, `password` boleh diisi manual; password ≥ 8 karakter. | S | I | `app/Http/Controllers/Api/EmployeeController.php:137-148` | TC-EMP-06, TC-EMP-07, TC-EMP-11 |
-| FR-EMP-05 | Kode duplikat → `409 DUPLICATE_CODE`; email duplikat → `409 DUPLICATE_EMAIL`. | M | I | `app/Http/Controllers/Api/EmployeeController.php:150-156` | TC-EMP-04, TC-EMP-05 |
-| FR-EMP-06 | Daftar karyawan dengan `search`, `status`, `page`, `limit` (maks 200). | M | I | `app/Http/Controllers/Api/EmployeeController.php:71-118` | TC-EMP-09 |
-| FR-EMP-07 | Detail karyawan per ID; tidak ada → `404 NOT_FOUND`. | M | I | `app/Http/Controllers/Api/EmployeeController.php:120-128` | TC-EMP-10, TC-EMP-14 |
-| FR-EMP-08 | Ubah `name`, `employee_code`, `status`, `email`, `password`. | M | I | `app/Http/Controllers/Api/EmployeeController.php:188-248` | TC-EMP-11 |
-| FR-EMP-09 | Nonaktifkan karyawan → login dan absensi ditolak. | M | I | `app/Http/Controllers/Api/EmployeeController.php:188-248`, `app/Http/Controllers/Api/AuthController.php:39-41` | TC-AUTH-04, TC-EMP-12 |
-| FR-EMP-10 | Hapus karyawan → akun, riwayat, dan berkas foto ikut terhapus. | S | I | `app/Http/Controllers/Api/EmployeeController.php:250-289` | TC-EMP-14, TC-EMP-15 |
-| FR-EMP-11 | Reset password → password acak baru, ditampilkan sekali. | S | I | `app/Http/Controllers/Api/EmployeeController.php:291-310` | TC-EMP-13 |
-| FR-EMP-12 | Pembuatan karyawan + akun dalam satu transaksi. | M | I | `app/Http/Controllers/Api/EmployeeController.php:158-180` | TC-EMP-01, TC-EMP-02 |
+| FR-EMP-03 | Akun login dibuat bersamaan; password acak 12 karakter ditampilkan **sekali**. | M | I | `app/Http/Controllers/Api/EmployeeController.php:149-153`, `app/Http/Controllers/Api/EmployeeController.php:187-190` | TC-EMP-01, TC-EMP-02 |
+| FR-EMP-04 | `employee_code`, `email`, `password` boleh diisi manual; password ≥ 8 karakter. | S | I | `app/Http/Controllers/Api/EmployeeController.php:142-153` | TC-EMP-06, TC-EMP-07, TC-EMP-11 |
+| FR-EMP-05 | Kode duplikat → `409 DUPLICATE_CODE`; email duplikat → `409 DUPLICATE_EMAIL`. | M | I | `app/Http/Controllers/Api/EmployeeController.php:155-161` | TC-EMP-04, TC-EMP-05 |
+| FR-EMP-06 | Daftar karyawan dengan `search`, `status`, `page`, `limit` (maks 200). | M | I | `app/Http/Controllers/Api/EmployeeController.php:76-123` | TC-EMP-09 |
+| FR-EMP-07 | Detail karyawan per ID; tidak ada → `404 NOT_FOUND`. | M | I | `app/Http/Controllers/Api/EmployeeController.php:125-133` | TC-EMP-10, TC-EMP-14 |
+| FR-EMP-08 | Ubah `name`, `employee_code`, `status`, `email`, `password`. | M | I | `app/Http/Controllers/Api/EmployeeController.php:193-253` | TC-EMP-11 |
+| FR-EMP-09 | Nonaktifkan karyawan → login dan absensi ditolak. | M | I | `app/Http/Controllers/Api/EmployeeController.php:193-253`, `app/Http/Controllers/Api/AuthController.php:39-41` | TC-AUTH-04, TC-EMP-12 |
+| FR-EMP-10 | Hapus karyawan → akun, riwayat, dan berkas foto ikut terhapus. | S | I | `app/Http/Controllers/Api/EmployeeController.php:255-294` | TC-EMP-14, TC-EMP-15 |
+| FR-EMP-11 | Reset password → password acak baru, ditampilkan sekali. | S | I | `app/Http/Controllers/Api/EmployeeController.php:296-315` | TC-EMP-13 |
+| FR-EMP-12 | Pembuatan karyawan + akun dalam satu transaksi. | M | I | `app/Http/Controllers/Api/EmployeeController.php:163-185` | TC-EMP-01, TC-EMP-02 |
 
 **Acceptance criteria**
 
@@ -347,13 +347,13 @@ Sepuluh tes unit di berkas itu menjadi **smoke pack** yang sama dengan `10-Test-
 | GAP-01 | Struktur folder belum sesuai dokumen awal (`backend/`, `mobile/`) | Reviewer mungkin menganggap deliverable tidak lengkap | Dokumentasikan sebagai deviasi; atau restrukturisasi di luar scope build ini | `01-SRS.md` D-05 |
 | GAP-02 | Aplikasi Mobile belum ada di repo | Fitur Employee hanya dapat diuji via API | Sediakan klien mobile atau bukti uji API | `README.md` baris 68 |
 | GAP-03 | Bukti UAT belum ditandatangani | Klaim "siap demo" belum sah sebagai penerimaan pengguna | Hasil sudah terisi (14 Lulus, 1 Blocked); tanda tangan menunggu sesi UAT resmi | `11-UAT.md`, `docs/Project A - QA Test Cases.xlsx` |
-| GAP-04 | Kode karyawan di `README.md` ditulis `EMP001`, implementasi `kyNN` | Kebingungan saat demo | Perbaiki README (di luar kewenangan build ini) | `README.md:25`, `app/Http/Controllers/Api/EmployeeController.php:44-50` |
+| GAP-04 | Kode karyawan di `README.md` ditulis `EMP001`, implementasi `kyNN` | Kebingungan saat demo | **Ditutup 19 Nov 2026**: README kini menulis `kyNN` | `README.md`, `app/Http/Controllers/Api/EmployeeController.php:41-56` |
 | GAP-05 | Tidak ada pencatatan perubahan (`updated_at`) pada karyawan/office | Audit perubahan tidak dapat dilakukan | Tambah kolom bila diperlukan | `database/migrations/2014_10_12_000000_create_employees_table.php`, `database/migrations/2014_10_12_000001_create_users_table.php`, `database/migrations/2014_10_12_000002_create_offices_table.php` |
 | GAP-06 | Tidak ada rate limit pada `POST /api/login` | Risiko brute force | Tambahkan pembatasan percobaan | `app/Http/Controllers/Api/AuthController.php` |
 | GAP-07 | Foto disimpan di disk lokal tanpa enkripsi | Risiko kebocoran bila server diakses langsung | Pindahkan ke object storage privat | `app/Http/Controllers/Api/AttendanceController.php:38-121` |
 | GAP-08 | Tidak ada endpoint hapus office | Office salah input hanya bisa dinonaktifkan | Tambahkan `DELETE` atau jelaskan sebagai keputusan | `routes/api.php:22-26` |
 | GAP-09 | ~~Root repo memuat implementasi Laravel paralel di samping Node~~ **Ditutup 19 Nov 2026**: Node dihapus, hanya Laravel tersisa | Dulu dua titik masuk membingungkan | Acuan kini `php artisan serve` | `app/`, `routes/api.php`, `public/index.php` |
-| GAP-10 | `README.md` menyebut 9 tes, aktual 5 metode/27 assertion | Laporan dapat salah mengutip cakupan | README ditulis ulang 19 Nov 2026 | `README.md`, `tests/Feature/WorkforceAttendanceTest.php` |
+| GAP-10 | `README.md` menyebut 9 tes, aktual 7 metode/27 assertion | Laporan dapat salah mengutip cakupan | README ditulis ulang 19 Nov 2026 | `README.md`, `tests/Feature/WorkforceAttendanceTest.php` |
 
 ---
 

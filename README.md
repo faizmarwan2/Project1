@@ -1,14 +1,14 @@
 # Project A — Workforce Attendance (Laravel)
 
 Aplikasi absensi karyawan berbasis GPS + kamera. Backend **Laravel 10** (PHP 8.1+),
-database SQLite, autentikasi JWT, dan Web HR berupa berkas statis di `public/`.
+database **MySQL/MariaDB**, autentikasi JWT, dan Web HR berupa berkas statis di `public/`.
 
 ## Stack
 
 | Bagian | Teknologi |
 |---|---|
 | Framework | Laravel 10 (`app/`, `routes/`, `database/`) |
-| Database | SQLite (`database/database.sqlite`) |
+| Database | MySQL/MariaDB 8+ / 10.4+ (`pdo_mysql`, InnoDB, `utf8mb4`) |
 | Autentikasi | JWT HS256 (`App\Services\JwtService`, middleware `jwt.auth`) |
 | Hash password | `Hash::make` (bcrypt) |
 | Web HR | Berkas statis `public/index.html` + `public/app.js` (tanpa build) |
@@ -21,19 +21,24 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Buat berkas database SQLite kosong, lalu jalankan migrasi dan seeder:
+Prasyarat: server MySQL/MariaDB berjalan dan ekstensi `pdo_mysql` aktif
+(`php -m | findstr pdo_mysql`). Buat database kosong, sesuaikan `DB_*` di `.env`,
+lalu jalankan migrasi dan seeder:
+
+```sql
+CREATE DATABASE workforce_attendance
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
 
 ```bash
-# Windows (PowerShell)
-New-Item -ItemType File -Path database/database.sqlite -Force
-
-# Linux/macOS
-touch database/database.sqlite
-
 php artisan migrate
 php artisan db:seed
 php artisan serve      # http://localhost:8000
 ```
+
+Kredensial bawaan `.env.example` memakai `root` tanpa password (umum pada XAMPP);
+ganti sesuai server Anda. Skema dibentuk oleh `database/migrations/` — tidak ada
+berkas database yang di-commit.
 
 `db:seed` menjalankan `HrSeeder` dan `OfficeSeeder`:
 
@@ -50,6 +55,10 @@ Seeder bersifat idempoten: aman dijalankan berulang, tidak menduplikasi data.
 ```bash
 php artisan test
 ```
+
+Tes memakai `RefreshDatabase`, jadi jalankan pada database **terpisah** dari data demo
+(`phpunit.xml` mengarah ke `workforce_attendance_test`). Buat database itu lebih dulu
+dengan `CREATE DATABASE workforce_attendance_test` — skema dibuat otomatis oleh tes.
 
 ## Format error
 

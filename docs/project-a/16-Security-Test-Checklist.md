@@ -49,7 +49,7 @@ flowchart LR
     end
 
     subgraph DATA["Data"]
-        DB[("SQLite")]
+        DB[("MySQL")]
         FS[("uploads/attendance")]
     end
 
@@ -188,7 +188,7 @@ Aturan:
 | OBS-07 | Tidak ada header keamanan (mis. `X-Content-Type-Options`) | Tidak ada middleware header di `app/Http/Kernel.php` | Risiko *MIME sniffing* / *clickjacking* pada browser lama | S3 | **Terbukti (ST-44)** → `BUG-01`. Verifikasi 19 Nov: header tetap tidak ada di Laravel. Pertimbangkan middleware header untuk produksi |
 | OBS-08 | `jwt.verify` tidak membatasi algoritma secara eksplisit | `app/Services/JwtService.php:41-60` | Ketergantungan pada perilaku bawaan pustaka | S4 | Tambahkan `{ algorithms: ['HS256'] }` |
 | OBS-09 | Foto tersimpan tanpa enkripsi di disk | `app/Http/Controllers/Api/AttendanceController.php:100-111` | Bocor bila server diakses langsung | S3 | GAP-07; batasi izin folder |
-| OBS-10 | Tidak ada jejak audit untuk hapus karyawan / reset password | `app/Http/Controllers/Api/EmployeeController.php:291-303`, endpoint delete | Penyalahgunaan wewenang sulit ditelusuri | S2 | Usulkan audit log |
+| OBS-10 | Tidak ada jejak audit untuk hapus karyawan / reset password | `app/Http/Controllers/Api/EmployeeController.php:296-315`, endpoint delete | Penyalahgunaan wewenang sulit ditelusuri | S2 | Usulkan audit log |
 
 | OBS-11 | ~~Kredensial HR dicetak ke stdout saat seeding~~ **Sudah diperbaiki di Laravel** | `database/seeders/HrSeeder.php:36-37` hanya menulis "Akun HR dibuat: <email>"; tidak ada password | — | S2 | **Ditutup 19 Nov 2026** — BUG-03 tidak lagi berlaku pada implementasi Laravel |
 
@@ -235,14 +235,14 @@ Enam `Gagal` di atas sudah tercatat sebagai `BUG-01` (header keamanan), `BUG-02`
 | Pemindaian kerentanan dependensi menyeluruh | Hanya `composer audit` sebagai bahan |
 | Uji beban/DoS | Target NFR dicatat di `09-Test-Plan.md` |
 | Keamanan aplikasi mobile | Aplikasi belum ada |
-| Enkripsi at-rest database | Tidak dikonfigurasi pada SQLite lokal |
+| Enkripsi at-rest database | Tidak dikonfigurasi pada MySQL lokal (XAMPP) |
 | Uji rekayasa sosial | Tidak relevan untuk demo internal |
 
 ---
 
 ## 13. Verifikasi Ulang pada Implementasi Laravel (19 November 2026)
 
-Setelah Node dihapus, lima pemeriksaan yang perilakunya bergantung pada kode diuji ulang pada server Laravel nyata (`php artisan serve`, port 3314, DB SQLite terpisah, PHP 8.5.12). Hasilnya **berbeda** dari siklus Node dan menggantikan angka pada baris ST terkait.
+Setelah Node dihapus, lima pemeriksaan yang perilakunya bergantung pada kode diuji ulang pada server Laravel nyata (`php artisan serve`, port 3314, DB MySQL terpisah, PHP 8.5.12). Hasilnya **berbeda** dari siklus Node dan menggantikan angka pada baris ST terkait.
 
 | ID | Perilaku Node (18 Nov) | Perilaku Laravel (19 Nov, terukur) | Status Laravel |
 |---|---|---|---|

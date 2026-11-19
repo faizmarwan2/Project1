@@ -72,11 +72,11 @@ flowchart LR
 
 | ID | Risiko | Bukti / penyebab | Dampak bila terjadi | P | D | Skor | Tingkat | Mitigasi | Pemicu |
 |---|---|---|---|---|---|---|---|---|---|
-| RISK-01 | Prasyarat runtime Laravel tidak terpenuhi sehingga server tidak dapat dijalankan | Butuh PHP ≥ 8.1 + `pdo_sqlite`, `vendor/` (hasil `composer install`), dan `.env`; repo tidak menyertakan `vendor/` maupun `.env` | Seluruh TC dan UAT tidak dapat direproduksi; tidak ada demo | 3 | 5 | **15** | **Kritis** | Jalankan `composer install`, buat `.env`, `php artisan key:generate`; catat versi PHP di laporan | `php artisan serve`/`php artisan test` gagal karena `vendor/autoload.php` atau `.env` tidak ada |
+| RISK-01 | Prasyarat runtime Laravel tidak terpenuhi sehingga server tidak dapat dijalankan | Butuh PHP ≥ 8.1 + `pdo_mysql`, server MySQL/MariaDB aktif, `vendor/` (hasil `composer install`), dan `.env`; repo tidak menyertakan `vendor/` maupun `.env` | Seluruh TC dan UAT tidak dapat direproduksi; tidak ada demo | 3 | 5 | **15** | **Kritis** | Jalankan `composer install`, buat database + `.env`, `php artisan key:generate`, `php artisan migrate`; catat versi PHP/MySQL di laporan | `php artisan serve`/`php artisan test` gagal karena `vendor/autoload.php`, `.env`, atau koneksi MySQL tidak ada |
 | RISK-02 | Tidak ada berkas `.env`, sehingga server memakai nilai bawaan | `.env` tidak ada di repo; `database/seeders/HrSeeder.php:24-25` memakai cadangan `HR_EMAIL`/`HR_PASSWORD`; `app/Services/JwtService.php:12` memakai `JWT_SECRET` cadangan | Token dapat dipalsukan bila cadangan dipakai; kredensial HR bawaan diketahui publik | 4 | 5 | **20** | **Kritis** | Buat `.env` dari `.env.example`, isi `JWT_SECRET` acak ≥ 32 karakter, ganti `HR_PASSWORD`; jangan pernah pakai cadangan untuk demo | Login demo memakai password bawaan; token diterima setelah `JWT_SECRET` diganti |
 | RISK-03 | ~~Dua tumpukan teknologi dalam satu repo~~ **Ditutup 19 Nov 2026** | Node `src/` sudah dihapus; `main` hanya memuat Laravel (`app/`, `routes/api.php`) | — | 1 | 2 | 2 | Rendah | Repo satu tumpukan; tetap catat D-10/D-12/GAP-09 sebagai riwayat | — |
-| RISK-04 | Jumlah tes di README berbeda dengan kode | `README.md` lama menulis "9 tes"; `tests/Feature/WorkforceAttendanceTest.php` berisi **5** metode uji (27 assertion) | Laporan QA salah mengutip cakupan | 2 | 2 | 4 | Rendah | Catat 5 tes/27 assertion; README sudah ditulis ulang 19 Nov 2026 | Pembandingan hasil `php artisan test` |
-| RISK-05 | Data uji bercampur data demo | Satu DB default `database/database.sqlite`; tes fitur memakai koneksi `testing` yang terpisah | Angka dashboard salah; kode `kyNN` melompat | 3 | 4 | 12 | Tinggi | Arahkan `DB_DATABASE` ke berkas khusus tes dan hapus `uploads/` tiap siklus (`09-Test-Plan.md` §4.2) | `belum_in` tidak sesuai perkiraan |
+| RISK-04 | Jumlah tes di README berbeda dengan kode | `README.md` lama menulis "9 tes"; `tests/Feature/` berisi **7** metode uji (27 assertion) | Laporan QA salah mengutip cakupan | 2 | 2 | 4 | Rendah | Catat 5 tes/27 assertion; README sudah ditulis ulang 19 Nov 2026 | Pembandingan hasil `php artisan test` |
+| RISK-05 | Data uji bercampur data demo | Satu database default `workforce_attendance`; `phpunit.xml` mengarahkan tes ke `workforce_attendance_test` | Angka dashboard salah; kode `kyNN` melompat | 3 | 4 | 12 | Tinggi | Arahkan `DB_DATABASE` ke database khusus tes dan hapus `uploads/` tiap siklus (`09-Test-Plan.md` §4.2) | `belum_in` tidak sesuai perkiraan |
 
 ### 2.2 Kategori B — Keamanan & Akses
 
@@ -131,7 +131,7 @@ Penilaian ulang hanya untuk risiko yang **berubah buktinya** selama eksekusi. Sk
 | RISK-20 | Tinggi (12) | **Rendah (3)** | 193 pemeriksaan tercatat (`hasil-*.json`), 64 blok di xlsx, tangkapan layar tersimpan. |
 | RISK-22 | Tinggi (12) | **Tinggi (12)** | UAT dijalankan internal; kolom tanda tangan `11-UAT.md` masih kosong sehingga penerimaan belum sah. |
 
-**Tidak berubah:** RISK-04 (README lama menulis 9 tes, aktual 5 metode/27 assertion), RISK-09 (token 12 jam tanpa pencabutan — ST-26 hanya mengonfirmasi masa berlaku), RISK-11..RISK-17 (keterbatasan desain: titip absen, mock location, lupa check-out, radius, shift malam, penghapusan riwayat), RISK-21 (sinkronisasi dokumen).
+**Tidak berubah:** RISK-04 (README lama menulis 9 tes, aktual 7 metode/27 assertion), RISK-09 (token 12 jam tanpa pencabutan — ST-26 hanya mengonfirmasi masa berlaku), RISK-11..RISK-17 (keterbatasan desain: titip absen, mock location, lupa check-out, radius, shift malam, penghapusan riwayat), RISK-21 (sinkronisasi dokumen).
 
 ---
 
@@ -158,7 +158,7 @@ Penilaian ulang hanya untuk risiko yang **berubah buktinya** selama eksekusi. Sk
 | 1 | RISK-02 Tanpa `.env` | 20 | Buat `.env`; isi secret acak; jangan pakai cadangan | Developer | Sebelum demo |
 | 2 | RISK-01 Prasyarat Laravel (`vendor/`, `.env`, PHP) | 15 | `composer install` + `.env` + `php artisan key:generate` sebelum siklus | Developer | Sebelum TC pertama |
 | 3 | RISK-18 Mobile tidak ada | 15 | Siapkan koleksi request + penjelasan di UAT | QA | Sebelum UAT |
-| 4 | RISK-05 Data uji bercampur | 12 | Arahkan `DB_DATABASE` ke berkas tes & hapus `uploads/` tiap siklus | QA | Setiap siklus |
+| 4 | RISK-05 Data uji bercampur | 12 | Arahkan `DB_DATABASE` ke database tes & hapus `uploads/` tiap siklus | QA | Setiap siklus |
 | 5 | RISK-13 Karyawan lupa check-out | 12 | Pantau tab "Belum OUT"; usulkan pengingat | QA | Sebelum UAT |
 
 ---

@@ -31,7 +31,7 @@
 | **Foto bukti** | Berkas gambar dari kamera saat IN/OUT; wajib ada | `app/Http/Controllers/Api/AttendanceController.php:38-121` |
 | **Bukti yatim** | Berkas yang sudah terunggah tetapi transaksi ditolak; harus dihapus | `app/Http/Controllers/Api/AttendanceController.php:173-183` |
 | **Karyawan aktif** | `employees.status = 'ACTIVE'`; hanya mereka yang dapat login & absen | `app/Http/Controllers/Api/AttendanceController.php:23-36` |
-| **Kredensial awal** | Password acak yang ditampilkan **sekali** saat akun dibuat | `app/Http/Controllers/Api/EmployeeController.php:182-185`, `app/Http/Controllers/Api/AdminController.php:102-105` |
+| **Kredensial awal** | Password acak yang ditampilkan **sekali** saat akun dibuat | `app/Http/Controllers/Api/EmployeeController.php:187-190`, `app/Http/Controllers/Api/AdminController.php:102-105` |
 
 ---
 
@@ -94,7 +94,7 @@ flowchart LR
 | **HR Admin** | Peran pengguna Web HR; dapat mengelola karyawan, office, dan melihat semua absensi | — | `users.role = 'HR'` |
 | **Employee** | Peran pengguna aplikasi/klien API; hanya data sendiri | — | `users.role = 'EMPLOYEE'` |
 | **`account_code`** | Kode akun HR | `HR01`, `HR02` | `app/Services/HrCodeService.php` |
-| **`employee_code`** | Kode karyawan | `ky01`, `ky02` | `app/Http/Controllers/Api/EmployeeController.php:44-50` |
+| **`employee_code`** | Kode karyawan | `ky01`, `ky02` | `app/Http/Controllers/Api/EmployeeController.php:41-56` |
 | **`employee_id`** | Kunci numerik karyawan | `1`, `2` | `employees.id` |
 | **`user_id`** | Kunci numerik akun | `1`, `2` | `users.id` |
 
@@ -114,9 +114,9 @@ flowchart LR
 | **bcrypt** | Algoritma hash password (cost 10) | `app/Http/Controllers/Api/AdminController.php`, `app/Http/Controllers/Api/EmployeeController.php` |
 | **unggah berkas (Laravel)** | Penanganan `multipart/form-data` lewat `$request->file('photo')` dan `UploadedFile` | `app/Http/Controllers/Api/AttendanceController.php:38-121` |
 | **multipart** | Format permintaan untuk mengirim berkas + field teks | `app/Http/Controllers/Api/AttendanceController.php:159`, `app/Http/Controllers/Api/AttendanceController.php:173-183` |
-| **SQLite** | Basis data berkas tunggal | `database/migrations/` |
+| **MySQL/MariaDB** | Basis data relasional yang dipakai aplikasi (`pdo_mysql`, InnoDB, `utf8mb4`) | `config/database.php`, `database/migrations/` |
 | **Eloquent** | ORM Laravel; model `User`, `Employee`, `Office`, `Attendance` | `app/Models/` |
-| **`journal_mode`** | Mode jurnal SQLite; Laravel memakai `delete` (bukan WAL) | `database/migrations/` |
+| **`AUTO_INCREMENT`** | Penomoran otomatis PK MySQL; dipakai agar kode `kyNN` tidak mundur setelah karyawan dihapus | `app/Http/Controllers/Api/EmployeeController.php:41-56` |
 | **Migrasi** | Berkas `database/migrations/*.php` yang membentuk skema; versi dilacak tabel `migrations` | `database/migrations/` |
 | **`ON DELETE CASCADE`** | Menghapus baris turunan otomatis | `database/migrations/` |
 | **Seed** | Data awal: akun HR + satu office demo | `database/seeders/` |

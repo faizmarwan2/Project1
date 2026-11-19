@@ -52,7 +52,7 @@ flowchart LR
 | Database | `DB_PATH` (variabel Node) di folder temp QA, terpisah dari data repo; di-seed dari nol (bersih: ya) |
 | Dokumen acuan | `01-SRS.md` v2.2, `09-Test-Plan.md`, `10-Test-Case.md`, `16-Security-Test-Checklist.md` |
 
-> **Penting:** laporan ini adalah **rekaman siklus Node (18 Nov 2026)**. Implementasi tersebut sudah tidak ada di repo. Verifikasi terpisah pada Laravel (5/5 tes fitur, 18/18 asap API) tercatat di `17-Test-Automation.md` §0.1a dan `16-Security-Test-Checklist.md` §13 — angka di bawah **bukan** hasil Laravel.
+> **Penting:** laporan ini adalah **rekaman siklus Node (18 Nov 2026)**. Implementasi tersebut sudah tidak ada di repo. Verifikasi terpisah pada Laravel (7/7 tes fitur, 18/18 asap API) tercatat di `17-Test-Automation.md` §0.1a dan `16-Security-Test-Checklist.md` §13 — angka di bawah **bukan** hasil Laravel.
 
 ---
 
@@ -170,7 +170,7 @@ Rujukan lengkap: `14-Risk-Register.md`.
 | Uji beban tidak dilakukan | Klaim performa hanya berdasarkan sampel kecil |
 | Uji penetrasi tidak dilakukan | Klaim keamanan terbatas pada checklist |
 | Node 22.23.2 dipinjam dari instalasi lokal | Siklus Node memerlukan Node 22.13+; hasil tidak berlaku untuk Node 20. Cleanup 19 Nov 2026 membuat batasan ini historis |
-| Siklus Laravel belum penuh | Hanya 5 tes fitur + 18 asap API + 11 skenario foto yang diverifikasi pada Laravel; 61 TC belum diulang |
+| Siklus Laravel belum penuh | Hanya 7 tes fitur + 18 asap API + 11 skenario foto yang diverifikasi pada Laravel; 61 TC belum diulang |
 
 **Aturan:** keterbatasan **wajib** disebut. Laporan tanpa bagian ini dianggap tidak lengkap.
 

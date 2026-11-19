@@ -6,7 +6,7 @@
 | Versi | 1.1 |
 | Tanggal | 18 November 2026 (diperbarui 19 November 2026) |
 | Cakupan otomasi | 61 test case (`10-Test-Case.md`) |
-| Perkakas | PHPUnit (`php artisan test`), HTTP client (`curl`/`fetch`), `FormData` untuk unggah, SQLite langsung untuk verifikasi efek samping |
+| Perkakas | PHPUnit (`php artisan test`), HTTP client (`curl`/`fetch`), `FormData` untuk unggah, MySQL langsung (`mysql`/`php artisan tinker`) untuk verifikasi efek samping |
 | Status | **Sudah dijalankan** pada implementasi Node (18 Nov 2026) — 193 pemeriksaan. Resep di §3–§10 kini ditulis untuk Laravel (§0.3) |
 | Batasan | Tes repo (`tests/Feature/WorkforceAttendanceTest.php`) dijalankan apa adanya; skrip QA ad hoc tetap di folder temp dan tidak di-commit |
 
@@ -46,7 +46,7 @@ Catatan: tabel ini menggabungkan pemeriksaan fungsional dan keamanan; angka yang
 
 | Suite | Perintah | Jumlah | Hasil |
 |---|---|---|---|
-| Tes fitur repo | `php artisan test` | 5 metode / 27 assertion | **5/5 Lulus** |
+| Tes fitur repo | `php artisan test` | 7 metode / 27 assertion | **7/7 Lulus** |
 | Asap API (server nyata) | `php artisan serve` + 18 request | 18 | **18/18 Lulus** |
 | Validasi foto (IN/OUT) | 11 skenario multipart | 11 | Sesuai harapan; `INVALID_PHOTO`/`PHOTO_REQUIRED`/`GPS_REQUIRED`/`OUTSIDE_RADIUS` benar |
 | Rate limit | 70 percobaan login | 70 | 60×`401` lalu 10×`429` |
@@ -56,7 +56,7 @@ Catatan: tabel ini menggabungkan pemeriksaan fungsional dan keamanan; angka yang
 ### 0.2 Pola yang terbukti berhasil
 
 1. **Satu klien kecil di atas `fetch`** (`api(method, path, {token, json})`) cukup untuk seluruh endpoint; tidak perlu Postman.
-2. **Akses SQLite langsung** (dulu `node:sqlite`, kini `sqlite3`/`php artisan tinker`) dapat memverifikasi efek samping (jumlah baris, `password_hash`, `in_photo`) — lebih kuat daripada memercayai respons API.
+2. **Akses DB langsung** (dulu `node:sqlite`, kini klien `mysql`/`php artisan tinker`) dapat memverifikasi efek samping (jumlah baris, `password_hash`, `in_photo`) — lebih kuat daripada memercayai respons API.
 3. **Puppeteer** menangkap `pageerror` dan `console` sehingga regresi frontend tidak lolos diam-diam.
 4. **Database terpisah per siklus** membuat hitungan `belum_in`/`sudah_in` dan penomoran `kyNN` dapat diprediksi.
 
@@ -66,11 +66,11 @@ Catatan: tabel ini menggabungkan pemeriksaan fungsional dan keamanan; angka yang
 |---|---|---|
 | Prasyarat | `composer install` | `vendor/` tidak di-commit |
 | Konfigurasi | `cp .env.example .env` lalu `php artisan key:generate` | Isi `JWT_SECRET`, ganti `HR_PASSWORD` |
-| Database bersih | arahkan `DB_DATABASE` ke berkas tes, lalu `php artisan migrate --force` | Jangan pakai DB demo |
+| Database bersih | arahkan `DB_DATABASE` ke database tes (`workforce_attendance_test`), lalu `php artisan migrate --force` | Jangan pakai DB demo |
 | Seed | `php artisan db:seed --force` | Membuat akun HR + office demo |
-| Tes fitur | `php artisan test` | 5 metode / 27 assertion |
+| Tes fitur | `php artisan test` | 7 metode / 27 assertion |
 | Server | `php artisan serve --port=8010` | Port bebas |
-| Bersihkan | hapus berkas DB tes dan folder `uploads/` | Sebelum siklus berikutnya |
+| Bersihkan | `php artisan db:wipe --force` (database tes) dan hapus folder `uploads/` | Sebelum siklus berikutnya |
 
 ### 0.4 Asersi yang sempat salah (bukan bug aplikasi)
 
@@ -90,13 +90,13 @@ Pelajaran: kegagalan pertama harus diuji dengan **dua pembacaan** (respons + kea
 
 | Hal | Fakta | Akibat |
 |---|---|---|
-| Runtime | PHP **8.5.12** (memenuhi Laravel 10, butuh ≥ 8.1) + ekstensi `pdo_sqlite` | Server jalan; `php artisan test` lulus |
+| Runtime | PHP **8.5.12** (memenuhi Laravel 10, butuh ≥ 8.1) + ekstensi `pdo_mysql` + server MySQL/MariaDB aktif | Server jalan; `php artisan test` lulus |
 | Berkas `.env` | Tidak ada di repo; dibuat dari `.env.example` untuk verifikasi | Tanpa `.env`, seed memakai cadangan → OBS-02 (ST-39/ST-40) |
 | Dependensi | `vendor/` tidak di-commit | `composer install` wajib sebelum tes |
 | Aplikasi mobile | Tidak ada | Alur Employee hanya dapat diotomasi pada level API |
 | Browser driver | Puppeteer/Playwright tidak menjadi prasyarat repo | 4 TC UI tetap dapat manual + screenshot |
 
-**Kesimpulan:** prasyarat Laravel terpenuhi pada mesin verifikasi (PHP 8.5.12, 5/5 tes fitur lulus, 18/18 asap API). `.env` tetap tidak ada di repo sehingga hasil siklus baru harus mencatat secret yang dipakai (OBS-02).
+**Kesimpulan:** prasyarat Laravel terpenuhi pada mesin verifikasi (PHP 8.5.12, 7/7 tes fitur lulus, 18/18 asap API). `.env` tetap tidak ada di repo sehingga hasil siklus baru harus mencatat secret yang dipakai (OBS-02).
 
 ---
 
@@ -116,7 +116,7 @@ flowchart LR
     A["TC kandidat"] --> B{"Butuh render<br/>browser?"}
     B -- "ya" --> C["Playwright"]
     B -- "tidak" --> D{"Butuh DB /<br/>waktu tetap?"}
-    D -- "ya" --> E["PHPUnit +<br/>SQLite"]
+    D -- "ya" --> E["PHPUnit +<br/>MySQL (RefreshDatabase)"]
     D -- "tidak" --> F["Klien HTTP +<br/>artisan test"]
     C --> G["Simpan bukti<br/>screenshot + trace"]
     E --> H["Simpan output<br/>TAP"]
@@ -132,8 +132,8 @@ flowchart LR
 ```mermaid
 flowchart TD
     subgraph S["Persiapan (sekali per siklus)"]
-        S1["Arahkan DB_DATABASE ke berkas tes"]
-        S2["Hapus DB & folder uploads/"]
+        S1["Arahkan DB_DATABASE ke database tes"]
+        S2["php artisan db:wipe + hapus uploads/"]
         S3["php artisan migrate + db:seed"]
         S4["php artisan serve --port=<bebas>"]
     end
@@ -419,21 +419,36 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: workforce_attendance_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s --health-timeout=5s --health-retries=5
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: pdo_sqlite, mbstring, openssl
+          extensions: pdo_mysql, mbstring, openssl
       - run: composer install --no-interaction --prefer-dist
       - run: cp .env.example .env && php artisan key:generate
-      - run: touch database/database.sqlite && php artisan migrate --force
       - run: php artisan test
         env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: workforce_attendance_test
+          DB_USERNAME: root
+          DB_PASSWORD: ''
           JWT_SECRET: ${{ secrets.CI_JWT_SECRET }}
 ```
 
-**Catatan:** pakai PHP **≥ 8.1** dengan ekstensi `pdo_sqlite`; tidak perlu Node sama sekali setelah cleanup 19 Nov 2026. Ini menggantikan RISK-01 versi Node.
+**Catatan:** pakai PHP **≥ 8.1** dengan ekstensi `pdo_mysql` dan service MySQL/MariaDB; tes memakai `RefreshDatabase` sehingga skema dibuat ulang di database tes. Tidak perlu Node sama sekali setelah cleanup 19 Nov 2026. Ini menggantikan RISK-01 versi Node.
 
 ---
 
@@ -475,7 +490,7 @@ jobs:
 
 | Berkas usulan | Isi | Status |
 |---|---|---|
-| `tests/Feature/WorkforceAttendanceTest.php` | Tes fitur repo: auth gate, unmatched employee, absensi, office/dashboard | **Ada** — 5 metode / 27 assertion, `php artisan test` 5/5 Lulus |
+| `tests/Feature/WorkforceAttendanceTest.php` + `tests/Feature/ExampleTest.php` | Tes fitur repo: auth gate, unmatched employee, absensi, office/dashboard | **Ada** — 7 metode / 27 assertion, `php artisan test` 7/7 Lulus |
 | `qa/` (helper + suite TC) | Klien HTTP, login, form foto, suite 61 TC | Belum dibuat; resep di §4–§7 |
 
 **Mengapa suite TC penuh belum dibuat:** menulis berkas kode baru di luar `docs/` berada di luar kewenangan build ini. Tes fitur repo sudah ada dan lulus; resep di dokumen ini siap dieksekusi bila siklus Laravel penuh dijalankan.

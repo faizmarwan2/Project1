@@ -344,7 +344,7 @@ Agar QA tidak salah mencatat, hal berikut **sudah dinyatakan** di dokumen dan **
 | Dashboard tidak real-time (60 detik) | Keputusan desain | FR-DSH-03 |
 | Status `BELUM_*` tidak tersimpan di DB | Status turunan, bukan kolom | `04-ERD.md` §4 |
 | ~~Dua implementasi (Node + Laravel) dalam satu repo~~ | **Ditutup 19 Nov 2026**: Node dihapus, repo hanya Laravel | D-10, D-12, GAP-09 |
-| `README` menyebut 9 tes, aktual 5 metode/27 assertion | Dokumentasi sudah disinkronkan 19 Nov 2026 | D-09, GAP-10 |
+| `README` menyebut 9 tes, aktual 7 metode/27 assertion | Dokumentasi sudah disinkronkan 19 Nov 2026 | D-09, GAP-10 |
 | Server gagal jalan di Node < 22.13 | Batasan runtime siklus lama; tidak berlaku di Laravel | RISK-01 (historis) |
 
 **Namun:** bila salah satu hal di atas **berubah perilaku** tanpa keputusan (mis. endpoint office tiba-tiba menghapus data, atau foto tampil tanpa token), itu **defect baru**.

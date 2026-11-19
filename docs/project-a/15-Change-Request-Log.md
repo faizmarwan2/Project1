@@ -157,18 +157,18 @@ Perbedaan berikut **sudah diketahui saat baseline** dan tidak memerlukan CR baru
 
 | No | Deviasi | Keputusan baseline | Rujukan |
 |---|---|---|---|
-| D-01 | SQLite, bukan MySQL | Diterima; constraint setara | `01-SRS.md` §10 |
+| D-01 | SQLite, bukan MySQL | **Ditutup 19 Nov 2026**: seluruh stack dikonversi ke MySQL/MariaDB | `01-SRS.md` §10 |
 | D-02 | GPS/kamera/geofence diimplementasikan | Diterima; fitur tambahan | `01-SRS.md` §10 |
 | D-03 | Ada `DELETE`, `reset-password`, `/api/admins` | Diterima; masuk FR-EMP-10, FR-EMP-11, FR-ADM | `01-SRS.md` §10 |
 | D-04 | Format respons `{data, meta}` / `{error}` | Diterima; kontrak aktual | `01-SRS.md` §6 |
 | D-05 | Tanpa folder `mobile/` | Diterima; diuji via API | `01-SRS.md` §10, GAP-02 |
 | D-06 | CSV ada | Diterima; FR-HIS-09 | `01-SRS.md` §10 |
 | D-07 | Login penuh, bukan "demo" | Diterima; menjadi Auth Gate | `01-SRS.md` §0 |
-| D-08 | README `EMP001` vs `kyNN` | Dicatat; README tidak diubah | GAP-04 |
-| D-09 | README menyebut 9 tes, aktual 5 metode/27 assertion | Dicatat; acuan = kode; README ditulis ulang 19 Nov 2026 | `tests/Feature/WorkforceAttendanceTest.php` |
+| D-08 | README `EMP001` vs `kyNN` | **Ditutup 19 Nov 2026**: README kini menulis `kyNN` | GAP-04 |
+| D-09 | README menyebut 9 tes, aktual 7 metode/27 assertion | Dicatat; acuan = kode; README ditulis ulang 19 Nov 2026 | `tests/Feature/WorkforceAttendanceTest.php` |
 | D-10 | Dulu dua implementasi: Node `src/` (diuji) + Laravel `app/` | **Ditutup 19 Nov 2026**: Node dihapus, titik masuk tunggal `php artisan serve` | `composer.json`, `app/`, `routes/api.php` |
 | D-11 | `422` untuk input tidak valid di docx, implementasi `400` | Dicatat; acuan = kode, kontrak di `01-SRS.md` §7.3 | `01-SRS.md` §10 |
-| D-12 | Riwayat implementasi Laravel paralel (20 endpoint + `/health`, 5 tes fitur) | Dicatat; kontrak API berlaku; angka QA tetap milik siklus Node | `app/`, `routes/api.php`, `tests/Feature/` |
+| D-12 | Riwayat implementasi Laravel paralel (20 endpoint + `/health`, 7 tes fitur) | Dicatat; kontrak API berlaku; angka QA tetap milik siklus Node | `app/`, `routes/api.php`, `tests/Feature/` |
 
 ### 6.3 Usulan yang **Bukan** CR
 

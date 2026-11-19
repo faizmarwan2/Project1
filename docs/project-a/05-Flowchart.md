@@ -29,7 +29,7 @@ flowchart TD
 
     HRHUB --> API["API Laravel<br/>jwt.auth + role"]
     EMPHUB --> API
-    API --> DB[("SQLite<br/>5 tabel")]
+    API --> DB[("MySQL<br/>5 tabel")]
     API -. "401 / 403" .-> X["Permintaan ditolak<br/>klien kembali ke Login"]:::err
 
     classDef start fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
@@ -378,8 +378,8 @@ flowchart TD
 |---|---|---|
 | R-01 | Dua IN bersamaan | `UNIQUE (employee_id, work_date)` + tangkap error UNIQUE → 409 |
 | R-02 | Dua OUT bersamaan | `UPDATE ... WHERE id = ? AND check_out_at IS NULL` + cek `changes` |
-| R-03 | Foto terunggah padahal request ditolak | `withUpload` memanggil `rmFile` saat handler melempar error |
-| R-04 | Nomor HR ganda | `BEGIN IMMEDIATE` + `UPDATE ... RETURNING seq` |
+| R-03 | Foto terunggah padahal request ditolak | Berkas yang sudah ditulis dihapus kembali bila `INSERT` gagal (`app/Http/Controllers/Api/AttendanceController.php:173-183`) |
+| R-04 | Nomor HR ganda | `UPDATE ... SET seq = LAST_INSERT_ID(seq + 1)` + `SELECT LAST_INSERT_ID()` (atomik per koneksi) |
 | R-05 | Email ganda karena balapan | `UNIQUE` pada `users.email` + cek awal |
 | R-06 | Perubahan radius setelah absensi | Jarak disimpan per transaksi (`in_distance_m`, `out_distance_m`) |
 | R-07 | Klien tampak sukses padahal gagal | Status lokal hanya berubah pada 2xx (`public/app.js:14-29`) |

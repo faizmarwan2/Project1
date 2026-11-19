@@ -242,14 +242,14 @@ Fakta yang harus ditulis apa adanya (bukan ditambal dengan asumsi):
 |---|---|
 | Aplikasi Mobile | Tidak ada folder/proyek mobile di repo; Mobile diperlakukan sebagai klien API sesuai `README.md` |
 | Struktur folder wajib docx | `backend/`, `mobile/`, `docs/` — kondisi aktual: backend Laravel di `app/`, web di `public/`, mobile tidak ada |
-| Database | SQLite via `pdo_sqlite` (Laravel), bukan MySQL; skema dibentuk migrasi `database/migrations/` dan versi dilacak tabel `migrations` |
+| Database | MySQL/MariaDB via `pdo_mysql` (InnoDB, `utf8mb4`); skema dibentuk migrasi `database/migrations/` dan versi dilacak tabel `migrations` |
 | Format respons | `{ data, meta }` / `{ error: { code, message } }`, bukan `{ success, message, data, error }` |
 | GPS/kamera/geofence | Disebut di luar scope wajib pada docx, tetapi **ada** di implementasi |
 | Export CSV | Disebut di luar scope pada docx, tetapi **ada** di Web HR |
 | UAT evidence | Belum ada berkas bukti UAT di `docs/` |
-| Jumlah tes | `README.md` lama menulis 9; `tests/Feature/WorkforceAttendanceTest.php` berisi **5 metode / 27 assertion** (README sudah ditulis ulang 19 Nov 2026) |
+| Jumlah tes | `README.md` lama menulis 9; `tests/Feature/` berisi **7 metode / 27 assertion** (README sudah ditulis ulang 19 Nov 2026) |
 | Implementasi | Hanya Laravel 10 di root (`app/`, `routes/api.php`, `public/index.php`); titik masuk `php artisan serve`. Implementasi Node yang diuji 18 Nov 2026 sudah dihapus (arsip `47adb6b`) |
-| Runtime mesin | PHP 8.5.12 + `pdo_sqlite`; `php artisan test` 5/5 lulus. Node v20.18.0 hanya riwayat siklus lama |
+| Runtime mesin | PHP 8.5.12 + `pdo_mysql` (MariaDB 10.4); `php artisan test` 7/7 lulus. Node v20.18.0 hanya riwayat siklus lama |
 | `.env` | Tidak ada di repo; kode memakai nilai cadangan (`app/Services/JwtService.php:12`, `database/seeders/HrSeeder.php:24-25`) — wajib dibuat sebelum demo |
 
 ---

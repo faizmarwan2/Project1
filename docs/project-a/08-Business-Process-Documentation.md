@@ -86,8 +86,8 @@ flowchart TD
 | Langkah | Aktor | Sistem | Bukti |
 |---|---|---|---|
 | 1 | HR login | Terbitkan JWT | `app/Http/Controllers/Api/AuthController.php:22-58` |
-| 2 | HR isi nama | Buat kode/email/password | `app/Http/Controllers/Api/EmployeeController.php:18-51`, `app/Http/Controllers/Api/EmployeeController.php:130-186` |
-| 3 | HR salin kredensial | Tampilkan `initial_password` sekali | `app/Http/Controllers/Api/EmployeeController.php:182-185` |
+| 2 | HR isi nama | Buat kode/email/password | `app/Http/Controllers/Api/EmployeeController.php:18-51`, `app/Http/Controllers/Api/EmployeeController.php:135-191` |
+| 3 | HR salin kredensial | Tampilkan `initial_password` sekali | `app/Http/Controllers/Api/EmployeeController.php:187-190` |
 | 4 | Karyawan login | Verifikasi status ACTIVE | `app/Http/Controllers/Api/AuthController.php:39-41` |
 
 **Aturan:** password awal hanya muncul pada respons pembuatan; bila hilang, HR melakukan reset (BP-06).
@@ -106,7 +106,7 @@ sequenceDiagram
     actor E as Employee
     participant M as Klien mobile
     participant A as API Laravel
-    participant DB as SQLite
+    participant DB as MySQL
 
     E->>M: Buka aplikasi
     M->>A: POST /api/login
@@ -428,7 +428,7 @@ kelengkapan OUT    = 16 / 18 × 100% = 88,9%
 
 | Aspek | Kebijakan saat ini | Catatan |
 |---|---|---|
-| Penyimpanan | SQLite lokal (`database/database.sqlite`) | Backup manual |
+| Penyimpanan | MySQL/MariaDB (`DB_DATABASE=workforce_attendance`) | Backup manual (`mysqldump`) |
 | Foto | Disk lokal `uploads/attendance/` | Nama berkas acak, bukan nama karyawan |
 | Akses foto | Wajib token; Employee hanya miliknya | `app/Http/Controllers/Api/AttendanceController.php:384-407` |
 | Retensi absensi | Sampai karyawan dihapus | Tidak ada arsip otomatis |

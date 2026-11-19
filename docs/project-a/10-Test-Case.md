@@ -267,7 +267,7 @@ Jalankan dari root proyek; `JWT_SECRET` harus sama dengan yang dipakai server ag
 | UI Web HR lanjutan | pembatasan akses, ubah/reset/hapus, tab dashboard | 15 | **14 Lulus**, 1 temuan (TypeError konsol) |
 | UI Web HR penutup | tombol salin, error form, muat ulang per menu, pembaruan otomatis | 4 | **4 Lulus** |
 
-Total pemeriksaan otomatis: **193 eksekusi** dengan **191 Lulus** dan **2 temuan** (lihat §13.4). Parameter lingkungan siklus ini: Windows 11, Node v22.23.2 (implementasi Node yang kini dihapus), server port 3311, database & folder unggahan QA terpisah dari repo, zona Asia/Jakarta, Chrome headless 1440×900. Verifikasi Laravel terpisah (5/5 tes fitur) ada di `17-Test-Automation.md` §0.1a.
+Total pemeriksaan otomatis: **193 eksekusi** dengan **191 Lulus** dan **2 temuan** (lihat §13.4). Parameter lingkungan siklus ini: Windows 11, Node v22.23.2 (implementasi Node yang kini dihapus), server port 3311, database & folder unggahan QA terpisah dari repo, zona Asia/Jakarta, Chrome headless 1440×900. Verifikasi Laravel terpisah (7/7 tes fitur, MySQL) ada di `17-Test-Automation.md` §0.1a.
 
 ### 13.2 Penyimpangan pengujian
 

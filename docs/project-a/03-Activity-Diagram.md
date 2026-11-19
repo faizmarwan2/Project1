@@ -321,7 +321,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:130-187`.
+**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:135-192`.
 
 ---
 
@@ -359,7 +359,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:188-249`, `app/Http/Controllers/Api/AuthController.php:39-41`.
+**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:193-254`, `app/Http/Controllers/Api/AuthController.php:39-41`.
 
 ---
 
@@ -391,7 +391,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:250-290`, `database/migrations/2014_10_12_000000_create_employees_table.php` + `database/migrations/2014_10_12_000001_create_users_table.php`.
+**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:255-295`, `database/migrations/2014_10_12_000000_create_employees_table.php` + `database/migrations/2014_10_12_000001_create_users_table.php`.
 
 ---
 
@@ -444,7 +444,7 @@ flowchart TD
     G -- "tidak" --> X2["400 VALIDATION"]:::err
     G -- "ya" --> H{"Email valid &<br/>belum dipakai?"}:::gate
     H -- "tidak" --> X3["400 / 409"]:::err
-    H -- "ya" --> I["BEGIN IMMEDIATE"]
+    H -- "ya" --> I["DB::beginTransaction()"]
     I --> J["Ambil nomor HR<br/>berikutnya"]
     J --> K["INSERT users<br/>role HR"]
     K --> L{"Berhasil?"}:::gate
@@ -489,7 +489,7 @@ flowchart TD
     classDef ok fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:1.5px;
 ```
 
-**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:291-311`.
+**Rujukan:** `app/Http/Controllers/Api/EmployeeController.php:296-316`.
 
 ---
 

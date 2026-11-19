@@ -57,7 +57,7 @@
 
 ```mermaid
 flowchart LR
-    U["Unit<br/>utils/time, geo, filters"] --> I["Integrasi API<br/>HTTP + SQLite + berkas"]
+    U["Unit<br/>utils/time, geo, filters"] --> I["Integrasi API<br/>HTTP + MySQL + berkas"]
     I --> E["End-to-end Web<br/>manual browser"]
     E --> A["UAT<br/>skenario bisnis"]
     A --> R{"Exit criteria<br/>terpenuhi?"}
@@ -84,8 +84,8 @@ flowchart LR
 | Komponen | Nilai | Catatan |
 |---|---|---|
 | OS | Windows 10/11 | Lingkungan pengembang saat ini |
-| Runtime | PHP **≥ 8.1** dengan `pdo_sqlite`, `mbstring`, `openssl` | Laravel 10; verifikasi memakai PHP 8.5.12 |
-| DB | SQLite (`DB_CONNECTION=sqlite`, `DB_DATABASE`) | Berkas terpisah untuk tes |
+| Runtime | PHP **≥ 8.1** dengan `pdo_mysql`, `mbstring`, `openssl` | Laravel 10; verifikasi memakai PHP 8.5.12 |
+| DB | MySQL/MariaDB (`DB_CONNECTION=mysql`, `DB_DATABASE`) | Database terpisah untuk tes |
 | Port | `8000` (default `artisan serve`) | Dapat diubah lewat `--port` |
 | Browser | Chrome/Edge terbaru | Web HR tanpa build |
 | Klien API | curl / Postman / Insomnia | Untuk alur Employee |
@@ -97,9 +97,9 @@ flowchart LR
 > **Catatan siklus (18 Nov 2026):** eksekusi penuh 61 TC dilakukan terhadap implementasi Node yang kini sudah dihapus (lihat `README.md` §Satu Implementasi). Untuk mengulang siklus pada implementasi Laravel, siapkan `vendor/`, `.env`, dan database terpisah seperti di bawah, lalu jalankan `php artisan test` sebelum menguji manual. Rincian risiko reproduksi: `14-Risk-Register.md` RISK-01.
 
 ```bash
-# 0. Pastikan runtime memenuhi syarat (PHP >= 8.1, ekstensi pdo_sqlite)
+# 0. Pastikan runtime memenuhi syarat (PHP >= 8.1, ekstensi pdo_mysql)
 php --version
-php -m | findstr pdo_sqlite
+php -m | findstr pdo_mysql
 
 # 1. Siapkan environment
 composer install
@@ -108,15 +108,15 @@ php artisan key:generate
 #    ubah JWT_SECRET menjadi nilai acak panjang
 #    ganti HR_PASSWORD; JANGAN memakai kredensial contoh untuk demo publik
 
-# 2. Siapkan database terpisah untuk tes (jangan pakai database demo)
-#    set DB_DATABASE ke berkas khusus tes di .env, lalu:
+# 2. Siapkan database MySQL terpisah untuk tes (jangan pakai database demo)
+#    buat database kosong, arahkan DB_DATABASE ke database itu, lalu:
 php artisan migrate --force
 php artisan db:seed --force
 php artisan serve --port=8010
 
-# 3. Bersihkan sebelum siklus baru (Windows PowerShell)
-Remove-Item -Force .\database\qa-test.sqlite -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force .\uploads -ErrorAction SilentlyContinue
+# 3. Bersihkan sebelum siklus baru
+#    (MySQL) php artisan db:wipe --force lalu ulangi migrasi + seed
+#    (PowerShell) Remove-Item -Recurse -Force .\uploads -ErrorAction SilentlyContinue
 ```
 
 **Aturan:** setiap siklus tes dimulai dari database bersih agar hitungan `belum_in`, `sudah_in`, dan penomoran `kyNN`/`HRNN` dapat diprediksi.
@@ -155,9 +155,10 @@ Remove-Item -Recurse -Force .\uploads -ErrorAction SilentlyContinue
 
 ### 6.1 Entry Criteria
 
-- [ ] `php --version` ≥ **8.1** dan ekstensi `pdo_sqlite` aktif.
+- [ ] `php --version` ≥ **8.1** dan ekstensi `pdo_mysql` aktif.
 - [ ] `.env` dibuat dari `.env.example`; `APP_KEY` dibuat, `JWT_SECRET` acak, `HR_PASSWORD` sudah diganti.
 - [ ] `composer install` selesai tanpa error.
+- [ ] Server MySQL/MariaDB aktif dan database `workforce_attendance_test` sudah dibuat.
 - [ ] `php artisan migrate` + `php artisan db:seed` berhasil pada database bersih.
 - [ ] Server berjalan dan `GET /health` mengembalikan `{ "ok": true }`.
 - [ ] Database bersih; seed HR + office terbentuk.

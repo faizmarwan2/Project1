@@ -142,7 +142,7 @@ flowchart TB
 
     E1["/api/me · /api/offices · /api/attendance/*"]
     E2["/api/employees · /api/admins · /api/dashboard<br/>(khusus HR)"]
-    DB[("SQLite: users · employees · offices<br/>attendances · hr_code_sequence")]
+    DB[("MySQL: users · employees · offices<br/>attendances · hr_code_sequence")]
     DENY["Permintaan ditolak<br/>klien kembali ke Login"]:::err
 
     WEB --> LG
@@ -270,18 +270,18 @@ Scenario: Web HR tidak menampilkan data sebelum login
 
 | ID | Kebutuhan | Prioritas | Rujukan |
 |---|---|---|---|
-| FR-EMP-01 | Tambah karyawan dengan `name` saja; kode otomatis `kyNN`. | M | `app/Http/Controllers/Api/EmployeeController.php:41-51`, `app/Http/Controllers/Api/EmployeeController.php:130-186` |
+| FR-EMP-01 | Tambah karyawan dengan `name` saja; kode otomatis `kyNN`. | M | `app/Http/Controllers/Api/EmployeeController.php:41-56`, `app/Http/Controllers/Api/EmployeeController.php:135-191` |
 | FR-EMP-02 | Email otomatis `nama.depan@ethes.tech`; bentrok diberi sufiks angka. | S | `app/Http/Controllers/Api/EmployeeController.php:18-39` |
-| FR-EMP-03 | Akun login dibuat bersamaan; password acak 12 karakter ditampilkan **sekali**. | M | `app/Http/Controllers/Api/EmployeeController.php:144-148`, `app/Http/Controllers/Api/EmployeeController.php:182-185` |
-| FR-EMP-04 | `employee_code`, `email`, `password` boleh diisi manual; password ≥ 8. | S | `app/Http/Controllers/Api/EmployeeController.php:137-148` |
-| FR-EMP-05 | Kode duplikat → `409 DUPLICATE_CODE`; email duplikat → `409 DUPLICATE_EMAIL`. | M | `app/Http/Controllers/Api/EmployeeController.php:150-156` |
-| FR-EMP-06 | Daftar karyawan: `search`, `status`, `page`, `limit` (maks 200). | M | `app/Http/Controllers/Api/EmployeeController.php:71-118` |
-| FR-EMP-07 | Detail karyawan per ID; tidak ada → `404 NOT_FOUND`. | M | `app/Http/Controllers/Api/EmployeeController.php:120-128` |
-| FR-EMP-08 | Ubah `name`, `employee_code`, `status`, `email`, `password`. | M | `app/Http/Controllers/Api/EmployeeController.php:188-248` |
-| FR-EMP-09 | Nonaktifkan karyawan → tidak bisa login & absensi. | M | `app/Http/Controllers/Api/EmployeeController.php:188-248`, `app/Http/Controllers/Api/AuthController.php:39-41` |
-| FR-EMP-10 | Hapus karyawan → akun, riwayat, dan foto ikut terhapus. | S | `app/Http/Controllers/Api/EmployeeController.php:250-289` |
-| FR-EMP-11 | Reset password → password acak baru, tampil sekali. | S | `app/Http/Controllers/Api/EmployeeController.php:291-310` |
-| FR-EMP-12 | Pembuatan karyawan + akun dalam satu transaksi. | M | `app/Http/Controllers/Api/EmployeeController.php:158-180` |
+| FR-EMP-03 | Akun login dibuat bersamaan; password acak 12 karakter ditampilkan **sekali**. | M | `app/Http/Controllers/Api/EmployeeController.php:149-153`, `app/Http/Controllers/Api/EmployeeController.php:187-190` |
+| FR-EMP-04 | `employee_code`, `email`, `password` boleh diisi manual; password ≥ 8. | S | `app/Http/Controllers/Api/EmployeeController.php:142-153` |
+| FR-EMP-05 | Kode duplikat → `409 DUPLICATE_CODE`; email duplikat → `409 DUPLICATE_EMAIL`. | M | `app/Http/Controllers/Api/EmployeeController.php:155-161` |
+| FR-EMP-06 | Daftar karyawan: `search`, `status`, `page`, `limit` (maks 200). | M | `app/Http/Controllers/Api/EmployeeController.php:76-123` |
+| FR-EMP-07 | Detail karyawan per ID; tidak ada → `404 NOT_FOUND`. | M | `app/Http/Controllers/Api/EmployeeController.php:125-133` |
+| FR-EMP-08 | Ubah `name`, `employee_code`, `status`, `email`, `password`. | M | `app/Http/Controllers/Api/EmployeeController.php:193-253` |
+| FR-EMP-09 | Nonaktifkan karyawan → tidak bisa login & absensi. | M | `app/Http/Controllers/Api/EmployeeController.php:193-253`, `app/Http/Controllers/Api/AuthController.php:39-41` |
+| FR-EMP-10 | Hapus karyawan → akun, riwayat, dan foto ikut terhapus. | S | `app/Http/Controllers/Api/EmployeeController.php:255-294` |
+| FR-EMP-11 | Reset password → password acak baru, tampil sekali. | S | `app/Http/Controllers/Api/EmployeeController.php:296-315` |
+| FR-EMP-12 | Pembuatan karyawan + akun dalam satu transaksi. | M | `app/Http/Controllers/Api/EmployeeController.php:163-185` |
 
 ### 3.3 Modul ADM
 
@@ -412,7 +412,7 @@ Scenario: Web HR tidak menampilkan data sebelum login
 | `attendances` | Transaksi absensi harian | `(employee_id, work_date)` |
 | `hr_code_sequence` | Counter nomor akun HR | `id = 1` |
 
-Integritas: `attendances.employee_id` → `employees.id` `ON DELETE CASCADE`; `users.employee_id` → `employees.id` `ON DELETE SET NULL`; `attendances.office_id` → `offices.id` `ON DELETE SET NULL` (`database/migrations/2014_10_12_000001_create_users_table.php:16`, `..._000003_create_attendances_table.php:15,20`). Foreign key SQLite diaktifkan lewat `foreign_key_constraints` (`config/database.php:43`, default `true`); mode jurnal memakai bawaan SQLite (`delete`), bukan WAL. Detail pada `04-ERD.md`.
+Integritas: `attendances.employee_id` → `employees.id` `ON DELETE CASCADE`; `users.employee_id` → `employees.id` `ON DELETE SET NULL`; `attendances.office_id` → `offices.id` `ON DELETE SET NULL` (`database/migrations/2014_10_12_000001_create_users_table.php:16`, `..._000003_create_attendances_table.php:15,20`). MySQL/InnoDB menegakkan `FOREIGN KEY` secara bawaan (`config/database.php:38-58`), jadi tidak ada `PRAGMA foreign_keys` seperti pada SQLite. Detail pada `04-ERD.md`.
 
 ---
 
@@ -532,18 +532,18 @@ Gagal (`app/Exceptions/Handler.php:23-66`):
 
 | No | Dokumen Awal | Implementasi | Status |
 |---|---|---|---|
-| D-01 | MySQL + migrations + seeder framework | SQLite + migrasi Laravel (`database/migrations/`) dan seeder (`database/seeders/`) | Perbedaan teknis; constraint setara |
+| D-01 | MySQL + migrations + seeder framework | **Sudah sesuai**: MySQL/MariaDB + migrasi Laravel (`database/migrations/`) dan seeder (`database/seeders/`) — dikonversi 19 Nov 2026 | Ditutup |
 | D-02 | GPS, kamera, geofencing di *scope tidak wajib* | Diimplementasikan (foto + radius) | Fitur tambahan |
 | D-03 | Endpoint `GET/POST/PUT /api/employees` | Ditambah `DELETE`, `reset-password`, `/api/admins` | Perlu pembaruan API contract |
 | D-04 | Format respons `{success, message, data, error}` | `{data, meta}` / `{error:{code,message}}` | Perbedaan kontrak |
 | D-05 | Struktur `backend/`, `mobile/`, `docs/` | Backend di `app/` + `routes/api.php`, Web di `public/`, **mobile belum ada** | Gap struktur |
 | D-06 | Export di luar scope | Tersedia CSV (`public/app.js:287-300`) | Fitur tambahan |
 | D-07 | Login disebut sebagai "login demo" | Login penuh dengan JWT + role guard, dan menjadi gerbang semua fitur | Lebih ketat dari dokumen |
-| D-08 | `README.md:25` menyebut kode karyawan `EMP001` | Implementasi memakai `kyNN` (`app/Http/Controllers/Api/EmployeeController.php:44-50`) | Perbaiki README saat ada kesempatan |
-| D-09 | `README.md` menyebut "9 tes" | `tests/Feature/WorkforceAttendanceTest.php` berisi **5** metode `test_*` | Acuan jumlah tes = kode, bukan README |
+| D-08 | `README.md:25` menyebut kode karyawan `EMP001` | Implementasi memakai `kyNN` (`app/Http/Controllers/Api/EmployeeController.php:41-56`); README diperbaiki 19 Nov 2026 | Ditutup |
+| D-09 | `README.md` menyebut "9 tes" | `tests/Feature/` berisi **7** metode `test_*` (5 `WorkforceAttendanceTest`, 2 `ExampleTest`) | Acuan jumlah tes = kode; README diperbaiki |
 | D-10 | Docx hanya menyebut satu tumpukan teknologi | Implementasi tunggal **Laravel 10** (`app/` + `routes/api.php`). Node/Express yang menjadi baseline uji 18 Nov 2026 sudah dihapus pada cleanup 19 Nov 2026 | Repo kini satu tumpukan; angka QA tetap tercatat sebagai hasil siklus Node |
-| D-11 | Docx menetapkan `422` untuk input tidak valid dan `409` untuk konflik | Implementasi memakai `400 VALIDATION` untuk input tidak valid (`EmployeeController.php:134-150,201-216`, `OfficeController.php:54-66`, `AuthController.php:28`) dan `409` untuk konflik (`AttendanceController.php:139-177`) | Perbedaan kode status |
-| D-12 | Fakta repo (bukan deviasi docx) | Riwayat: implementasi Laravel (commit `3ee2b7a`) pernah berdampingan dengan Node. **Sudah disatukan**; Laravel menyediakan 20 endpoint API + `/health` (`routes/api.php`), gerbang `jwt.auth` (`routes/api.php:18`) dan peran `role:HR`/`role:EMPLOYEE` (`app/Http/Middleware/RequireRole.php`), 5 tes fitur, serta seeder akun HR (`database/seeders/HrSeeder.php`) | Kontrak API §7.1 berlaku; angka eksekusi QA tetap milik siklus Node |
+| D-11 | Docx menetapkan `422` untuk input tidak valid dan `409` untuk konflik | Implementasi memakai `400 VALIDATION` untuk input tidak valid (`EmployeeController.php:139-155,201-216`, `OfficeController.php:54-66`, `AuthController.php:28`) dan `409` untuk konflik (`AttendanceController.php:139-177`) | Perbedaan kode status |
+| D-12 | Fakta repo (bukan deviasi docx) | Riwayat: implementasi Laravel (commit `3ee2b7a`) pernah berdampingan dengan Node. **Sudah disatukan**; Laravel menyediakan 20 endpoint API + `/health` (`routes/api.php`), gerbang `jwt.auth` (`routes/api.php:18`) dan peran `role:HR`/`role:EMPLOYEE` (`app/Http/Middleware/RequireRole.php`), 7 tes otomatis, serta seeder akun HR (`database/seeders/HrSeeder.php`) | Kontrak API §7.1 berlaku; angka eksekusi QA tetap milik siklus Node |
 
 ---
 
@@ -561,8 +561,8 @@ Gagal (`app/Exceptions/Handler.php:23-66`):
 | `ACCOUNT_INACTIVE` | 403 | Karyawan nonaktif | `app/Http/Controllers/Api/AuthController.php:39-41`, `app/Http/Controllers/Api/AttendanceController.php:31-33` |
 | `OUTSIDE_RADIUS` | 403 | Di luar radius office | `app/Http/Controllers/Api/AttendanceController.php:86-98` |
 | `NOT_FOUND` | 404 | Resource tidak ditemukan | route terkait, `app/Exceptions/Handler.php:29-38` |
-| `DUPLICATE_CODE` | 409 | Kode karyawan dipakai | `app/Http/Controllers/Api/EmployeeController.php:150-152`, `app/Http/Controllers/Api/EmployeeController.php:216-218` |
-| `DUPLICATE_EMAIL` | 409 | Email dipakai | `app/Http/Controllers/Api/EmployeeController.php:154-156`, `app/Http/Controllers/Api/EmployeeController.php:220-222`, `app/Http/Controllers/Api/AdminController.php:102-105` |
+| `DUPLICATE_CODE` | 409 | Kode karyawan dipakai | `app/Http/Controllers/Api/EmployeeController.php:155-157`, `app/Http/Controllers/Api/EmployeeController.php:221-223` |
+| `DUPLICATE_EMAIL` | 409 | Email dipakai | `app/Http/Controllers/Api/EmployeeController.php:159-161`, `app/Http/Controllers/Api/EmployeeController.php:225-227`, `app/Http/Controllers/Api/AdminController.php:102-105` |
 | `ALREADY_CHECKED_IN` | 409 | Sudah IN hari ini | `app/Http/Controllers/Api/AttendanceController.php:155-157`, `app/Http/Controllers/Api/AttendanceController.php:179-181` |
 | `NOT_CHECKED_IN` | 409 | Belum IN | `app/Http/Controllers/Api/AttendanceController.php:195-197` |
 | `ALREADY_CHECKED_OUT` | 409 | Sudah OUT | `app/Http/Controllers/Api/AttendanceController.php:198-200` |

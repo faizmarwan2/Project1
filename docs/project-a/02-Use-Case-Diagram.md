@@ -384,7 +384,7 @@ flowchart TD
 1. HR membuka halaman Karyawan → tab Admin.
 2. Sistem menampilkan `account_code`, `name`, `email` akun HR.
 3. HR menekan "Tambah akun" → jenis akun `HR`.
-4. Sistem membuat `account_code` `HRNN` secara atomik (`BEGIN IMMEDIATE` + counter).
+4. Sistem membuat `account_code` `HRNN` secara atomik (`INSERT IGNORE` + `LAST_INSERT_ID(seq + 1)` pada `hr_code_sequence`, di dalam transaksi MySQL).
 5. Sistem menyimpan hash password; respons memuat `initial_password`.
 6. Akun baru langsung dapat login dan membuka Dashboard.
 
